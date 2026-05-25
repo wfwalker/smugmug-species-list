@@ -46,6 +46,7 @@ html_content = f"""
         .species-grid li {{ margin-bottom: 8px; break-inside: avoid; }}
         a {{ text-decoration: none; }}
         a:hover {{ text-decoration: underline; }}
+        .sm-user-ui h3 {{ padding-bottom: 16px; padding-top: 8px; }}
     </style>
 </head>
 <body>
