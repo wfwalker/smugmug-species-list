@@ -1,6 +1,8 @@
 import sqlite3
 import shutil
 import os
+import urllib.request
+import json
 
 # 1. Path Configuration
 lrcat_path = "/Users/walker/Pictures/Lightroom/Lightroom Catalog-v13-5.lrcat"
@@ -19,6 +21,12 @@ cursor = conn.cursor()
 
 gallery_mapping = {
     "Vireos-Shrike-Babblers-and-Erpornis": "Vireos-and-Allies",
+    "Southern-Storm-Petrels": "Storm-Petrels",
+    "Asian-Barbets": "Toucans-and-Barbets",
+    "New-World-Barbets": "Toucans-and-Barbets",
+    "Toucan-Barbets": "Toucans-and-Barbets",
+    "Toucans": "Toucans-and-Barbets",
+    "Asian-and-Grauer's-Broadbills": "Broadbills",
 }
 
 query = """
@@ -48,6 +56,26 @@ cursor.execute(query)
 results = cursor.fetchall()
 current_family = None
 
+# query smugmug API to find which bird family galleries we have right now
+
+smugmug_api_key = os.getenv("SMUGMUG_API_KEY")
+
+smugmug_galleries_query = f"""https://api.smugmug.com/api/v2/node/Rgm3dH!children?APIKey={smugmug_api_key}&count=100"""
+
+smugmug_req = urllib.request.Request(smugmug_galleries_query)
+smugmug_req.add_header('Accept', 'application/json')
+
+smugmug_gallery_names = []
+
+with urllib.request.urlopen(smugmug_req) as response:
+    # Read response body and parse JSON string
+    data = json.loads(response.read().decode())
+    for gallery in data["Response"]["Node"]:
+        smugmug_gallery_names.append(gallery["UrlName"])
+
+print(f"""Found {len(smugmug_gallery_names)} SmugMug galleries""")
+print(smugmug_gallery_names)
+
 html_content = f"""
 <!DOCTYPE html>
 <html>
@@ -69,20 +97,33 @@ html_content = f"""
     <ul class="species-grid">
 """
 
-for family, species, count in results:
+
+# iterate through all the species in taxonomic order
+# for each one we have a family name, species name and photo count
+for raw_family, species, count in results:
+    # by default we'll use the eBird family name with hyphens as the family gallery URL
+    gallery_name = raw_family
+    raw_family_with_hypens = raw_family.replace(' ', '-')
+    hyphen_gallery = raw_family_with_hypens
+
+    # we have a few galleries that don't follow the eBird family names
+    # for those, we have a custom mapping here from eBird family hyphen name to Bill hyphen gallery name
+    if raw_family_with_hypens in gallery_mapping:
+        hyphen_gallery = gallery_mapping[raw_family_with_hypens]
+        gallery_name = hyphen_gallery.replace('-', ' ')
+
     # If we hit a new family, close the previous list and start a new one
-    if family != current_family:
+    if hyphen_gallery != current_family:
         if current_family is not None:
             html_content += "</ul>\n"
 
-        # family link is family name with hyphens, run through the mapping
-        family_with_hypens = family.replace(' ', '-')
-        if family_with_hypens in gallery_mapping:
-            family_with_hypens = gallery_mapping[family_with_hypens]
-        family_link = "https://billwalker.smugmug.com/Bird-Families/" + family_with_hypens
+        if hyphen_gallery not in smugmug_gallery_names:
+            print(f"""unknown family gallery name {hyphen_gallery}""")
 
-        html_content += f'<h3><a href="{family_link}">{family}</a></h3>\n<ul>\n'
-        current_family = family
+        family_link = "https://billwalker.smugmug.com/Bird-Families/" + hyphen_gallery
+
+        html_content += f'<h3><a href="{family_link}">{gallery_name}</a></h3>\n<ul>\n'
+        current_family = hyphen_gallery
     
     url_name = species.replace(" ", "+")
     html_content += f'  <li><a href="https://billwalker.smugmug.com/search/?q={url_name}">{species} ({count})</a></li>\n'
