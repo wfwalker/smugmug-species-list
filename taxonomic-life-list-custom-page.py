@@ -27,6 +27,9 @@ gallery_mapping = {
     "Toucan-Barbets": "Toucans-and-Barbets",
     "Toucans": "Toucans-and-Barbets",
     "Asian-and-Grauer's-Broadbills": "Broadbills",
+    "Hawks-Eagles-and-Kites": "Birds-of-Prey",
+    "Falcons-and-Caracaras": "Birds-of-Prey",
+    "Osprey": "Birds-of-Prey",
 }
 
 query = """
@@ -113,6 +116,7 @@ for raw_family, species, count in results:
         gallery_name = hyphen_gallery.replace('-', ' ')
 
     # If we hit a new family, close the previous list and start a new one
+    # TODO -- UHOH not all the species in a given gallery are contiguous in the sort.
     if hyphen_gallery != current_family:
         if current_family is not None:
             html_content += "</ul>\n"
