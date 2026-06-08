@@ -4,6 +4,9 @@ import os
 import urllib.request
 import json
 
+
+# TODO write to the custom html block automagically. Life List node is QK57K6, Alphabetical /api/v2/node/cmh3SJ and Taxonomic /api/v2/node/3KXcp2
+
 # 1. Path Configuration
 lrcat_path = "/Users/walker/Pictures/Lightroom/Lightroom Catalog-v13-5.lrcat"
 temp_db = "/Users/walker/Downloads/Lightroom Catalog-copy-v13-5.lrcat"
