@@ -818,7 +818,7 @@ Yellow-bellied Sapsucker,3,0,1,3
 Yellow-legged Thrush,3,0,0,3
 Yellow-olive Flycatcher,3,0,0,3
 Blue-footed Booby,657,655,10,2
-Brewer's Blackbird,7,5,0,2
+Brewer's Blackbird,7,5,2,2
 Long-tailed Broadbill,7,5,5,2
 Coppery-headed Emerald,4,2,3,2
 Toucan Barbet,4,2,2,2
@@ -1118,7 +1118,7 @@ Black-chested Buzzard-Eagle,104,104,2,0
 American Wigeon,100,100,2,0
 King Eider,99,99,2,0
 Mallard,92,92,2,0
-Bobolink,88,88,0,0
+Bobolink,88,88,1,0
 Amazon Kingfisher,86,86,2,0
 Bewick's Wren,86,86,3,0
 White Ibis,86,86,1,0
@@ -1141,7 +1141,7 @@ Striated Caracara,71,71,1,0
 Yellow-billed Magpie,71,71,2,0
 Rock Wren,69,69,1,0
 Ferruginous Pygmy-Owl,68,68,1,0
-Mountain Bluebird,67,67,0,0
+Mountain Bluebird,67,67,2,0
 Bonaparte's Gull,66,66,1,0
 Cedar Waxwing,65,65,4,0
 Andean Avocet,63,63,1,0
@@ -1167,7 +1167,7 @@ Violet-green Swallow,50,50,2,0
 Wandering Tattler,49,49,1,0
 Black-capped Chickadee,48,48,7,0
 Dusky-tailed Canastero,48,48,1,0
-Puna Teal,48,48,0,0
+Puna Teal,48,48,1,0
 Black-billed Magpie,47,47,1,0
 Broad-winged Hawk,47,47,5,0
 Southern Giant-Petrel,47,47,2,0
@@ -1180,7 +1180,7 @@ Mourning Sierra Finch,43,43,1,0
 Pinyon Jay,43,43,2,0
 Western Tanager,43,43,1,0
 Fiery-billed Aracari,42,42,1,0
-Ochre-breasted Antpitta,42,42,0,0
+Ochre-breasted Antpitta,42,42,2,0
 Rufous-necked Wood-Rail,42,42,1,0
 Black-bellied Whistling-Duck,41,41,1,0
 Downy Woodpecker,41,41,2,0
@@ -1197,11 +1197,11 @@ Boat-billed Heron,38,38,1,0
 Ochre-naped Ground-Tyrant,38,38,1,0
 Ridgway's Rail,38,38,2,0
 Bronzed Cowbird,37,37,3,0
-Canyon Wren,37,37,0,0
+Canyon Wren,37,37,1,0
 Ornate Hawk-Eagle,37,37,2,0
 Yellow-crowned Night Heron,37,37,1,0
 Red-backed Sierra Finch,36,36,1,0
-Purple Martin,35,35,0,0
+Purple Martin,35,35,1,0
 Soft-plumaged Petrel,35,35,1,0
 Sooty Shearwater,35,35,1,0
 Black-cheeked Warbler,34,34,2,0
@@ -1274,12 +1274,12 @@ Great Black Hawk,19,19,1,0
 Hermit Warbler,19,19,2,0
 Red-fronted Coot,19,19,2,0
 Stripe-tailed Hummingbird,19,19,1,0
+Black-capped Flycatcher,18,18,1,0
 Buff-throated Saltator,18,18,2,0
 Eastern Screech-Owl,18,18,1,0
 Flame-throated Warbler,18,18,1,0
 Orange-collared Manakin,18,18,2,0
 White-throated Robin,18,18,1,0
-Black-capped Flycatcher,17,17,0,0
 Brown Jay,17,17,3,0
 Golden-olive Woodpecker,17,17,1,0
 Trumpeter Swan,17,17,1,0
@@ -1306,7 +1306,7 @@ Smoky-brown Woodpecker,14,14,1,0
 Sulphur-bellied Tyrannulet,14,14,1,0
 Tropical Gnatcatcher,14,14,1,0
 White-throated Mountain-gem,14,14,1,0
-Black-bellied Plover,13,13,0,0
+Black-bellied Plover,13,13,1,0
 Black-billed Nightingale-Thrush,13,13,2,0
 Eastern Kingbird,13,13,1,0
 Masked Water-Tyrant,13,13,1,0
@@ -1318,7 +1318,7 @@ California Scrub-Jay,11,11,1,0
 Northern Black-throated Trogon,11,11,1,0
 Ochre-bellied Flycatcher,11,11,2,0
 Andean Potoo,10,10,0,0
-Black-chinned Siskin,10,10,0,0
+Black-chinned Siskin,10,10,1,0
 Black-throated Gray Warbler,10,10,1,0
 Black-throated Sparrow,10,10,3,0
 Carib Grackle,10,10,2,0
@@ -1330,18 +1330,19 @@ Cackling Goose,8,8,2,0
 Chestnut Woodpecker,8,8,2,0
 Arctic Warbler,7,7,1,0
 Black-faced Grosbeak,7,7,1,0
+Blue-backed Conebill,7,7,1,0
 Boat-billed Flycatcher,7,7,2,0
 Brewer's Sparrow,7,7,2,0
 Lesser Necklaced Laughingthrush,7,7,2,0
 Lesson's Motmot,7,7,1,0
 Black Hornbill,6,6,6,0
-Blue-backed Conebill,6,6,0,0
 Blue-black Grassquit,6,6,1,0
 Brown Inca,6,6,2,0
 Buller's Shearwater,6,6,3,0
 Canyon Towhee,6,6,4,0
 Caribbean Martin,6,6,1,0
 Northern Pygmy-Owl,6,6,0,0
+Bicolored Conebill,5,5,1,0
 Black-and-yellow Silky-flycatcher,5,5,1,0
 Blue-chinned Sapphire,5,5,1,0
 Bluish Flowerpiercer,5,5,2,0
@@ -1351,10 +1352,9 @@ Silver-breasted Broadbill,5,5,5,0
 Austral Thrush,4,4,1,0
 Beryl-spangled Tanager,4,4,1,0
 Berylline Hummingbird,4,4,1,0
-Bicolored Conebill,4,4,0,0
 Black Rail,4,4,0,0
-Bridled Titmouse,4,4,0,0
-Brown Booby,4,4,0,0
+Bridled Titmouse,4,4,1,0
+Brown Booby,4,4,1,0
 Brown-crested Flycatcher,4,4,1,0
 Kalij Pheasant,4,4,4,0
 Salvin's Albatross,4,4,0,0
