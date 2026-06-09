@@ -10,7 +10,7 @@ import json
 # 1. Path Configuration
 lrcat_path = "/Users/walker/Pictures/Lightroom/Lightroom Catalog-v13-5.lrcat"
 temp_db = "/Users/walker/Downloads/Lightroom Catalog-copy-v13-5.lrcat"
-output_html = "taxonomic_life_list.html"
+output_html = "html/taxonomic_life_list.html"
 
 # 2. Copy the DB (Prevents "Database Locked" error if LrC is open)
 shutil.copy2(lrcat_path, temp_db)
