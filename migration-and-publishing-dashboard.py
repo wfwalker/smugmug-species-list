@@ -1,49 +1,36 @@
 #!/usr/bin/python3
 
-import sqlite3
-import shutil
 import csv
 import json
 import os
+from lrcat_utils import open_catalog, BIRD_ROOT
 
-# --- CONFIGURATION ---
-# Replace with your actual path
-lrcat_path = "/Users/walker/Pictures/Lightroom/Lightroom Catalog-v13-5.lrcat" 
-temp_db = "/Users/walker/Downloads/Lightroom Catalog-copy-v13-5.lrcat"
-output_csv = "bird_migration_dashboard.csv"
+OUTPUT_CSV = "bird_migration_dashboard.csv"
 
-# The Bird Taxonomy Root ID (from your genealogy)
-BIRD_ROOT = "/41240/825689457%"
-
-def run_dashboard():
-    # 0. Load JSON file if available
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    json_path = os.path.join(script_dir, "photos-ebird-mybird.json")
-    
-    json_species = set()
-    if os.path.exists(json_path):
-        try:
-            with open(json_path, 'r', encoding='utf-8') as f:
-                json_data = json.load(f)
-                json_species = {item["Common Name"] for item in json_data if "Common Name" in item}
-        except Exception as e:
-            print(f"⚠️ Error loading JSON file: {e}")
-    else:
+def load_json_species(json_path):
+    """Loads unique bird species common names from the photos-ebird-mybird.json file."""
+    if not os.path.exists(json_path):
         print(f"⚠️ Warning: JSON file not found at {json_path}")
+        return set()
+        
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            json_data = json.load(f)
+            return {item["Common Name"] for item in json_data if "Common Name" in item}
+    except Exception as e:
+        print(f"⚠️ Error loading JSON file: {e}")
+        return set()
 
-    # 1. Create a temporary copy of the catalog
-    if os.path.exists(temp_db):
-        os.remove(temp_db)
-    shutil.copy2(lrcat_path, temp_db)
-
-    # 2. Connect to the database
-    conn = sqlite3.connect(temp_db)
-    cursor = conn.cursor()
-
-    # 3. Queries to gather statistics
+def fetch_db_statistics(cursor):
+    """
+    Queries the database and returns:
+    - label_stats: dict of label -> {total_label, keyword_on_label, needs_tagging}
+    - keyword_stats: dict of keyword -> count
+    - published_stats: dict of species -> published_count
+    """
     
     # Query A: Label-based statistics (Legacy color label info)
-    query_label = f"""
+    query_label = """
     SELECT 
         i.colorLabels AS SpeciesName,
         COUNT(DISTINCT i.id_local) AS Total_With_This_Label,
@@ -61,7 +48,7 @@ def run_dashboard():
     """
 
     # Query B: Keyword-based statistics (Taxonomic keyword info)
-    query_keyword = f"""
+    query_keyword = """
     SELECT 
         k.name AS SpeciesName,
         COUNT(DISTINCT i.id_local) AS Total_With_Keyword
@@ -73,7 +60,7 @@ def run_dashboard():
     """
 
     # Query C: De-duplicated SmugMug published counts (Keyword + Label published photos)
-    query_published = f"""
+    query_published = """
     SELECT 
         SpeciesName,
         COUNT(DISTINCT ImageId) AS PublishedCount
@@ -106,101 +93,113 @@ def run_dashboard():
     GROUP BY SpeciesName;
     """
 
-    try:
-        # Fetch label data
-        cursor.execute(query_label, (BIRD_ROOT,))
-        label_stats = {
-            row[0]: {
-                "total_label": row[1],
-                "keyword_on_label": row[2],
-                "needs_tagging": row[3]
-            }
-            for row in cursor.fetchall()
+    # Fetch label data
+    cursor.execute(query_label, (BIRD_ROOT,))
+    label_stats = {
+        row[0]: {
+            "total_label": row[1],
+            "keyword_on_label": row[2],
+            "needs_tagging": row[3]
         }
+        for row in cursor.fetchall()
+    }
 
-        # Fetch keyword data
-        cursor.execute(query_keyword, (BIRD_ROOT,))
-        keyword_stats = {row[0]: row[1] for row in cursor.fetchall()}
+    # Fetch keyword data
+    cursor.execute(query_keyword, (BIRD_ROOT,))
+    keyword_stats = {row[0]: row[1] for row in cursor.fetchall()}
 
-        # Fetch published data
-        cursor.execute(query_published, (BIRD_ROOT,))
-        published_stats = {row[0]: row[1] for row in cursor.fetchall()}
+    # Fetch published data
+    cursor.execute(query_published, (BIRD_ROOT,))
+    published_stats = {row[0]: row[1] for row in cursor.fetchall()}
 
-        # 4. Merge results in Python
-        # The union of all species names in legacy labels and the JSON list
-        all_species = set(label_stats.keys()).union(json_species)
+    return label_stats, keyword_stats, published_stats
 
-        merged_rows = []
-        for species in all_species:
-            in_json = "Yes" if species in json_species else "No"
-            
-            l_stats = label_stats.get(species, {})
-            total_label = l_stats.get("total_label", 0)
-            needs_tagging = l_stats.get("needs_tagging", 0)
-            
-            total_keyword = keyword_stats.get(species, 0)
-            published_count = published_stats.get(species, 0)
-            
-            merged_rows.append({
-                "species_name": species,
-                "in_json": in_json,
-                "total_label": total_label,
-                "total_keyword": total_keyword,
-                "published_count": published_count,
-                "needs_tagging": needs_tagging
-            })
+def generate_report(label_stats, keyword_stats, published_stats, json_species):
+    """Merges all sources into a unified list of species dicts, sorted in priority order."""
+    all_species = set(label_stats.keys()).union(json_species)
 
-        # Sorting logic:
-        # 1. Species in JSON but not published to SmugMug first (high priority action item)
-        # 2. Species that need tagging (needs_tagging > 0)
-        # 3. Total label photos descending
-        # 4. Species name alphabetical
-        def sort_key(item):
-            is_json_unpublished = 1 if (item["in_json"] == "Yes" and item["published_count"] == 0) else 0
-            return (-is_json_unpublished, -item["needs_tagging"], -item["total_label"], item["species_name"])
-
-        merged_rows.sort(key=sort_key)
-
-        # 5. Save to CSV
-        headers = [
-            "Species Name", 
-            "In JSON List", 
-            "Total Photos (Label)", 
-            "Has Taxonomic Keyword", 
-            "Published to SmugMug", 
-            "Mismatched/Needs Tagging"
-        ]
-
-        with open(output_csv, mode='w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(headers)
-            for r in merged_rows:
-                writer.writerow([
-                    r["species_name"],
-                    r["in_json"],
-                    r["total_label"],
-                    r["total_keyword"],
-                    r["published_count"],
-                    r["needs_tagging"]
-                ])
-
-        # Summary statistics
-        json_unpublished_count = sum(1 for r in merged_rows if r["in_json"] == "Yes" and r["published_count"] == 0)
-        total_needs_tagging_count = sum(1 for r in merged_rows if r["needs_tagging"] > 0)
+    merged_rows = []
+    for species in all_species:
+        in_json = "Yes" if species in json_species else "No"
         
-        print(f"✅ Success! Dashboard saved to: {output_csv}")
-        print(f"Total species in dashboard: {len(merged_rows)}")
-        print(f"Species in JSON list: {len(json_species)}")
-        print(f"❌ JSON species NOT yet published to SmugMug: {json_unpublished_count}")
-        print(f"⚠️ Species needing Lightroom taxonomy tagging: {total_needs_tagging_count}")
+        l_stats = label_stats.get(species, {})
+        total_label = l_stats.get("total_label", 0)
+        needs_tagging = l_stats.get("needs_tagging", 0)
+        
+        total_keyword = keyword_stats.get(species, 0)
+        published_count = published_stats.get(species, 0)
+        
+        merged_rows.append({
+            "species_name": species,
+            "in_json": in_json,
+            "total_label": total_label,
+            "total_keyword": total_keyword,
+            "published_count": published_count,
+            "needs_tagging": needs_tagging
+        })
 
-    except sqlite3.Error as e:
-        print(f"❌ SQL Error: {e}")
-    finally:
-        conn.close()
-        # Clean up the temp database
-        if os.path.exists(temp_db):
-            os.remove(temp_db)
+    # Sorting logic:
+    # 1. Species in JSON but not published to SmugMug first (high priority action item)
+    # 2. Species that need tagging (needs_tagging > 0)
+    # 3. Total label photos descending
+    # 4. Species name alphabetical
+    def sort_key(item):
+        is_json_unpublished = 1 if (item["in_json"] == "Yes" and item["published_count"] == 0) else 0
+        return (-is_json_unpublished, -item["needs_tagging"], -item["total_label"], item["species_name"])
+
+    merged_rows.sort(key=sort_key)
+    return merged_rows
+
+def save_to_csv(output_path, merged_rows):
+    """Writes the dashboard report rows to a CSV file."""
+    headers = [
+        "Species Name", 
+        "In JSON List", 
+        "Total Photos (Label)", 
+        "Has Taxonomic Keyword", 
+        "Published to SmugMug", 
+        "Mismatched/Needs Tagging"
+    ]
+
+    with open(output_path, mode='w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(headers)
+        for r in merged_rows:
+            writer.writerow([
+                r["species_name"],
+                r["in_json"],
+                r["total_label"],
+                r["total_keyword"],
+                r["published_count"],
+                r["needs_tagging"]
+            ])
+
+def main():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    json_path = os.path.join(script_dir, "photos-ebird-mybird.json")
+    
+    print("Loading species from JSON list...")
+    json_species = load_json_species(json_path)
+
+    print("Connecting to Lightroom Catalog...")
+    with open_catalog() as cursor:
+        label_stats, keyword_stats, published_stats = fetch_db_statistics(cursor)
+
+    print("Processing and merging statistics...")
+    merged_rows = generate_report(label_stats, keyword_stats, published_stats, json_species)
+
+    print("Saving dashboard report...")
+    save_to_csv(OUTPUT_CSV, merged_rows)
+
+    # Print summary statistics
+    json_unpublished_count = sum(1 for r in merged_rows if r["in_json"] == "Yes" and r["published_count"] == 0)
+    total_needs_tagging_count = sum(1 for r in merged_rows if r["needs_tagging"] > 0)
+    
+    print(f"✅ Success! Dashboard saved to: {OUTPUT_CSV}")
+    print(f"Total species in dashboard: {len(merged_rows)}")
+    print(f"Species in JSON list: {len(json_species)}")
+    print(f"❌ JSON species NOT yet published to SmugMug: {json_unpublished_count}")
+    print(f"⚠️ Species needing Lightroom taxonomy tagging: {total_needs_tagging_count}")
 
 if __name__ == "__main__":
-    run_dashboard()
+    main()
