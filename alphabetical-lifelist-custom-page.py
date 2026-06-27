@@ -1,27 +1,9 @@
 #!/usr/bin/python3
 
 import os
-from lrcat_utils import open_catalog, BIRD_ROOT
+from lrcat_utils import open_catalog, fetch_published_species
 
 OUTPUT_HTML = "html/alphabetical_life_list.html"
-
-def fetch_alphabetical_list(cursor):
-    """Queries the database to fetch alphabetical list of published species."""
-    query = """
-    SELECT k.name, COUNT(DISTINCT i.id_local)
-    FROM AgLibraryKeyword k
-    JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
-    JOIN Adobe_images i ON ki.image = i.id_local
-    JOIN AgLibraryPublishedCollectionImage pci ON i.id_local = pci.image
-    JOIN AgLibraryPublishedCollection child_coll ON pci.collection = child_coll.id_local
-    JOIN AgLibraryPublishedCollection parent_coll ON child_coll.parent = parent_coll.id_local
-    WHERE k.genealogy LIKE ?
-      AND parent_coll.name LIKE '%SmugMug%'
-    GROUP BY k.name
-    ORDER BY k.name ASC;
-    """
-    cursor.execute(query, (BIRD_ROOT,))
-    return cursor.fetchall()
 
 def generate_html_content(results):
     """Generates complete HTML content matching the original formatting exactly."""
@@ -58,7 +40,11 @@ def main():
     
     print("Connecting to Lightroom Catalog...")
     with open_catalog() as cursor:
-        results = fetch_alphabetical_list(cursor)
+        raw_results = fetch_published_species(cursor)
+        
+    # Extract (SpeciesName, SpeciesCount) and sort alphabetically
+    results = [(row[1], row[2]) for row in raw_results]
+    results.sort(key=lambda x: x[0])
         
     print(f"Generating alphabetical lifelist custom page for {len(results)} species...")
     html_content = generate_html_content(results)

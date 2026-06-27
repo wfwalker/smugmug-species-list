@@ -34,3 +34,30 @@ def open_catalog(lrcat_path=LRCAT_PATH, temp_db=TEMP_DB_PATH):
                 os.remove(temp_db)
             except OSError as e:
                 print(f"⚠️ Warning: Could not clean up temporary database copy: {e}")
+
+def fetch_published_species(cursor):
+    """
+    Fetches the taxonomic list of all published bird species.
+    Returns list of tuples: (FamilyGroup, SpeciesName, SpeciesCount)
+    ordered taxonomically.
+    """
+    query = """
+    SELECT 
+        parent_k.name AS FamilyGroup,
+        k.name AS SpeciesName,
+        COUNT(DISTINCT i.id_local) AS SpeciesCount
+    FROM AgLibraryKeyword k
+    JOIN AgLibraryKeyword parent_k ON k.parent = parent_k.id_local
+    JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
+    JOIN Adobe_images i ON ki.image = i.id_local
+    JOIN AgLibraryPublishedCollectionImage pci ON i.id_local = pci.image
+    JOIN AgLibraryPublishedCollection child_coll ON pci.collection = child_coll.id_local
+    JOIN AgLibraryPublishedCollection parent_coll ON child_coll.parent = parent_coll.id_local
+    WHERE k.genealogy LIKE ?
+      AND parent_coll.name LIKE '%SmugMug%'
+      AND k.name NOT LIKE '{%' 
+    GROUP BY k.name
+    ORDER BY parent_k.id_local, k.id_local;
+    """
+    cursor.execute(query, (BIRD_ROOT,))
+    return cursor.fetchall()

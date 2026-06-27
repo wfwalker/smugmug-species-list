@@ -3,32 +3,9 @@
 import os
 import urllib.request
 import json
-from lrcat_utils import open_catalog, BIRD_ROOT
+from lrcat_utils import open_catalog, fetch_published_species
 
 OUTPUT_HTML = "html/taxonomic_life_list.html"
-
-def fetch_taxonomic_list(cursor):
-    """Queries the database to fetch taxonomic list of published species."""
-    query = """
-    SELECT 
-        parent_k.name AS FamilyGroup,
-        k.name AS SpeciesName,
-        COUNT(DISTINCT i.id_local) AS SpeciesCount
-    FROM AgLibraryKeyword k
-    JOIN AgLibraryKeyword parent_k ON k.parent = parent_k.id_local
-    JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
-    JOIN Adobe_images i ON ki.image = i.id_local
-    JOIN AgLibraryPublishedCollectionImage pci ON i.id_local = pci.image
-    JOIN AgLibraryPublishedCollection child_coll ON pci.collection = child_coll.id_local
-    JOIN AgLibraryPublishedCollection parent_coll ON child_coll.parent = parent_coll.id_local
-    WHERE k.genealogy LIKE ?
-      AND parent_coll.name LIKE '%SmugMug%'
-      AND k.name NOT LIKE '{%' 
-    GROUP BY k.name
-    ORDER BY parent_k.id_local, k.id_local;
-    """
-    cursor.execute(query, (BIRD_ROOT,))
-    return cursor.fetchall()
 
 def fetch_smugmug_galleries():
     """Queries SmugMug API to get currently active bird family gallery UrlNames."""
@@ -123,7 +100,7 @@ def main():
     
     print("Connecting to Lightroom Catalog...")
     with open_catalog() as cursor:
-        results = fetch_taxonomic_list(cursor)
+        results = fetch_published_species(cursor)
         
     print("Fetching SmugMug galleries list...")
     smugmug_galleries = fetch_smugmug_galleries()
