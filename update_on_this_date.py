@@ -9,7 +9,140 @@ import urllib.request
 
 # Import from our central Lightroom utilities
 from lrcat_utils import open_catalog
-from publish_lifelist import load_credentials, make_signed_request
+import hmac
+import hashlib
+import base64
+import time
+import random
+
+# --- OAUTH 1.0A SIGNING HELPER (PURE PYTHON) ---
+
+def oauth_sign_request(method, url, params, consumer_key, consumer_secret, token, token_secret):
+    """
+    Computes OAuth 1.0a signature and headers for a request.
+    """
+    url_parts = urllib.parse.urlparse(url)
+    base_url = f"{url_parts.scheme}://{url_parts.netloc}{url_parts.path}"
+    
+    all_params = {}
+    if url_parts.query:
+        for k, v in urllib.parse.parse_qsl(url_parts.query):
+            all_params[k] = v
+    all_params.update(params)
+    
+    oauth_params = {
+        "oauth_consumer_key": consumer_key,
+        "oauth_nonce": str(random.randint(100000000, 999999999)),
+        "oauth_signature_method": "HMAC-SHA1",
+        "oauth_timestamp": str(int(time.time())),
+        "oauth_token": token,
+        "oauth_version": "1.0"
+    }
+    all_params.update(oauth_params)
+    
+    normalized_parts = []
+    for k in sorted(all_params.keys()):
+        v = all_params[k]
+        k_enc = urllib.parse.quote(str(k), safe="")
+        v_enc = urllib.parse.quote(str(v), safe="")
+        normalized_parts.append(f"{k_enc}={v_enc}")
+    normalized_params_str = "&".join(normalized_parts)
+    
+    method_upper = method.upper()
+    base_url_enc = urllib.parse.quote(base_url, safe="")
+    normalized_params_enc = urllib.parse.quote(normalized_params_str, safe="")
+    sig_base_string = f"{method_upper}&{base_url_enc}&{normalized_params_enc}"
+    
+    key_consumer_enc = urllib.parse.quote(consumer_secret, safe="")
+    key_token_enc = urllib.parse.quote(token_secret, safe="")
+    signing_key = f"{key_consumer_enc}&{key_token_enc}".encode("utf-8")
+    
+    hashed = hmac.new(signing_key, sig_base_string.encode("utf-8"), hashlib.sha1)
+    signature = base64.b64encode(hashed.digest()).decode("utf-8")
+    
+    oauth_params["oauth_signature"] = signature
+    header_parts = []
+    for k in sorted(oauth_params.keys()):
+        v = oauth_params[k]
+        header_parts.append(f'{k}="{urllib.parse.quote(v, safe="")}"')
+    auth_header = "OAuth " + ", ".join(header_parts)
+    
+    return auth_header
+
+def make_signed_request(method, url, params=None, body=None, headers=None, credentials=None):
+    if params is None:
+        params = {}
+    if headers is None:
+        headers = {}
+        
+    consumer_key = credentials.get("consumer_key")
+    consumer_secret = credentials.get("consumer_secret")
+    token = credentials.get("token")
+    token_secret = credentials.get("token_secret")
+    
+    if not all([consumer_key, consumer_secret, token, token_secret]):
+        print("❌ Error: Missing OAuth credentials in .env file or environment variables.")
+        sys.exit(1)
+        
+    auth_header = oauth_sign_request(method, url, params, consumer_key, consumer_secret, token, token_secret)
+    headers["Authorization"] = auth_header
+    headers["Accept"] = "application/json"
+    
+    if params:
+        url_parts = urllib.parse.urlparse(url)
+        q_params = list(urllib.parse.parse_qsl(url_parts.query))
+        for k, v in params.items():
+            q_params.append((k, v))
+        new_query = urllib.parse.urlencode(q_params)
+        url = urllib.parse.urlunparse((
+            url_parts.scheme,
+            url_parts.netloc,
+            url_parts.path,
+            url_parts.params,
+            new_query,
+            url_parts.fragment
+        ))
+        
+    req_body = None
+    if body is not None:
+        if isinstance(body, (dict, list)):
+            req_body = json.dumps(body).encode("utf-8")
+            headers["Content-Type"] = "application/json"
+        else:
+            req_body = str(body).encode("utf-8")
+            headers["Content-Type"] = "text/plain"
+            
+    req = urllib.request.Request(url, data=req_body, headers=headers, method=method)
+    
+    try:
+        with urllib.request.urlopen(req) as response:
+            return json.loads(response.read().decode())
+    except urllib.error.HTTPError as e:
+        error_content = e.read().decode()
+        print(f"❌ HTTP Error {e.code}: {e.reason}")
+        print(f"Response details: {error_content}")
+        raise e
+
+def load_credentials():
+    credentials = {}
+    if os.path.exists(".env"):
+        with open(".env", "r") as f:
+            for line in f:
+                if "=" in line and not line.strip().startswith("#"):
+                    k, v = line.strip().split("=", 1)
+                    credentials[k.strip()] = v.strip().strip('"').strip("'")
+                    
+    for k in ["SMUGMUG_API_KEY", "SMUGMUG_API_SECRET", "SMUGMUG_ACCESS_TOKEN", "SMUGMUG_ACCESS_TOKEN_SECRET"]:
+        val = os.getenv(k)
+        if val:
+            credentials[k] = val
+            
+    return {
+        "consumer_key": credentials.get("SMUGMUG_API_KEY"),
+        "consumer_secret": credentials.get("SMUGMUG_API_SECRET"),
+        "token": credentials.get("SMUGMUG_ACCESS_TOKEN"),
+        "token_secret": credentials.get("SMUGMUG_ACCESS_TOKEN_SECRET")
+    }
 
 # --- SMUGMUG ALBUM DISCOVERY ---
 
@@ -71,11 +204,12 @@ def get_photos_on_this_date():
     # Build query with IN clause for the dates
     placeholders = ",".join(["?"] * len(target_dates))
     query = f"""
-        SELECT rp.remoteId, i.captureTime
+        SELECT MIN(rp.remoteId), i.captureTime
         FROM Adobe_images i
         JOIN AgRemotePhoto rp ON i.id_local = rp.photo
         WHERE rp.remoteId LIKE '/image/%'
           AND strftime('%m-%d', i.captureTime) IN ({placeholders})
+        GROUP BY i.captureTime
         ORDER BY i.captureTime DESC;
     """
     
