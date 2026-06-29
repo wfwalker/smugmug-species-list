@@ -5,7 +5,9 @@ import json
 import os
 from lrcat_utils import open_catalog, BIRD_ROOT
 
-OUTPUT_CSV = "bird_migration_dashboard.csv"
+REPORTS_DIR = "reports"
+OUTPUT_CSV = os.path.join(REPORTS_DIR, "bird_migration_dashboard.csv")
+OUTPUT_MD = os.path.join(REPORTS_DIR, "bird_migration_dashboard.md")
 
 def load_json_species(json_path):
     """Loads unique bird species common names from the photos-ebird-mybird.json file."""
@@ -174,6 +176,49 @@ def save_to_csv(output_path, merged_rows):
                 r["needs_tagging"]
             ])
 
+def save_to_markdown(output_path, merged_rows):
+    """Writes the dashboard report rows to a Markdown file."""
+    headers = [
+        "Species Name", 
+        "In JSON List", 
+        "Total Photos (Label)", 
+        "Has Taxonomic Keyword", 
+        "Published to SmugMug", 
+        "Mismatched/Needs Tagging"
+    ]
+    
+    lines = []
+    lines.append("# Bird Migration & Publishing Dashboard")
+    lines.append(f"Generated on: {os.popen('date').read().strip()}\n")
+    
+    # Summary statistics
+    total_species = len(merged_rows)
+    json_unpublished = sum(1 for r in merged_rows if r["in_json"] == "Yes" and r["published_count"] == 0)
+    needs_tagging_count = sum(1 for r in merged_rows if r["needs_tagging"] > 0)
+    
+    lines.append("## Summary Statistics")
+    lines.append(f"- **Total Species in Dashboard**: {total_species}")
+    lines.append(f"- **Species Needing Lightroom Tagging**: {needs_tagging_count}")
+    lines.append(f"- **JSON Species NOT Yet Published to SmugMug**: {json_unpublished}\n")
+    
+    # Table headers
+    lines.append("| " + " | ".join(headers) + " |")
+    lines.append("| " + " | ".join(["---"] * len(headers)) + " |")
+    
+    for r in merged_rows:
+        row_parts = [
+            r["species_name"],
+            r["in_json"],
+            str(r["total_label"]),
+            str(r["total_keyword"]),
+            str(r["published_count"]),
+            str(r["needs_tagging"])
+        ]
+        lines.append("| " + " | ".join(row_parts) + " |")
+        
+    with open(output_path, mode='w', encoding='utf-8') as f:
+        f.write("\n".join(lines) + "\n")
+
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     json_path = os.path.join(script_dir, "photos-ebird-mybird.json")
@@ -189,14 +234,20 @@ def main():
     merged_rows = generate_report(label_stats, keyword_stats, published_stats, json_species)
 
     print("Saving dashboard report...")
+    # Create reports directory if it doesn't exist
+    os.makedirs(REPORTS_DIR, exist_ok=True)
+    
     save_to_csv(OUTPUT_CSV, merged_rows)
+    save_to_markdown(OUTPUT_MD, merged_rows)
 
     # Print summary statistics
     json_unpublished_count = sum(1 for r in merged_rows if r["in_json"] == "Yes" and r["published_count"] == 0)
     total_needs_tagging_count = sum(1 for r in merged_rows if r["needs_tagging"] > 0)
     
-    print(f"✅ Success! Dashboard saved to: {OUTPUT_CSV}")
-    print(f"Total species in dashboard: {len(merged_rows)}")
+    print(f"✅ Success! Reports saved under the '{REPORTS_DIR}/' subfolder:")
+    print(f"   • CSV: {OUTPUT_CSV}")
+    print(f"   • MD:  {OUTPUT_MD}")
+    print(f"\nTotal species in dashboard: {len(merged_rows)}")
     print(f"Species in JSON list: {len(json_species)}")
     print(f"❌ JSON species NOT yet published to SmugMug: {json_unpublished_count}")
     print(f"⚠️ Species needing Lightroom taxonomy tagging: {total_needs_tagging_count}")

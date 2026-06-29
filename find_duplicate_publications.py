@@ -171,7 +171,9 @@ def main():
         report_lines.append("")
 
     # Save report
-    report_path = "duplicate_publications_report.md"
+    reports_dir = "reports"
+    os.makedirs(reports_dir, exist_ok=True)
+    report_path = os.path.join(reports_dir, "duplicate_publications_report.md")
     try:
         with open(report_path, "w", encoding="utf-8") as f_report:
             f_report.write("\n".join(report_lines))
