@@ -1,2 +1,5 @@
 families.json
 root-children.json
+.DS_Store
+.env
+reports
