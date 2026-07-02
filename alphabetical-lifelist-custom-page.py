@@ -1,9 +1,19 @@
 #!/usr/bin/python3
 
 import os
-from lrcat_utils import open_catalog, fetch_published_species
+import sys
+from lrcat_utils import open_catalog, BIRD_ROOT
 
 OUTPUT_HTML = "html/alphabetical_life_list.html"
+
+def make_relative_url(url):
+    """Converts absolute SmugMug URLs into site-relative paths to optimize HTML size."""
+    if not url:
+        return ""
+    for domain in ["https://billwalker.smugmug.com", "https://www.birdwalker.com"]:
+        if url.startswith(domain):
+            return url[len(domain):]
+    return url
 
 def generate_html_content(results):
     """Generates HTML content utilizing the shared base template and partials."""
@@ -19,17 +29,22 @@ def generate_html_content(results):
     # 2. Build species list
     list_items = []
     current_letter = None
-    for name, count in results:
+    for name, count, url in results:
         first_letter = name[0].upper()
         if first_letter != current_letter:
             current_letter = first_letter
             header_item = header_template.replace("{{ LETTER }}", current_letter)
             list_items.append("        " + header_item.strip())
             
-        url_name = name.replace(" ", "+")
-        search_link = f"https://billwalker.smugmug.com/search/?q={url_name}"
+        photo_url = make_relative_url(url)
+        if count == 1 and photo_url:
+            species_link = photo_url
+        else:
+            url_name = name.replace(" ", "+")
+            species_link = f"/search/?q={url_name}"
+            
         row_item = (row_template
-                    .replace("{{ LINK }}", search_link)
+                    .replace("{{ LINK }}", species_link)
                     .replace("{{ NAME }}", name)
                     .replace("{{ COUNT }}", str(count)))
         list_items.append("        " + row_item.strip())
@@ -71,13 +86,42 @@ def main():
     # Ensure html directory exists
     os.makedirs(os.path.dirname(OUTPUT_HTML), exist_ok=True)
     
+    query = """
+    WITH RankedPhotos AS (
+        SELECT 
+            parent_k.id_local AS FamilyId,
+            k.id_local AS SpeciesId,
+            k.name AS SpeciesName,
+            rp.url AS SmugMugUrl,
+            ROW_NUMBER() OVER (PARTITION BY k.name ORDER BY i.captureTime ASC) as rn,
+            COUNT(*) OVER (PARTITION BY k.name) as photo_count
+        FROM AgLibraryKeyword k
+        JOIN AgLibraryKeyword parent_k ON k.parent = parent_k.id_local
+        JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
+        JOIN Adobe_images i ON ki.image = i.id_local
+        JOIN AgLibraryPublishedCollectionImage pci ON i.id_local = pci.image
+        JOIN AgLibraryPublishedCollection child_coll ON pci.collection = child_coll.id_local
+        JOIN AgLibraryPublishedCollection parent_coll ON child_coll.parent = parent_coll.id_local
+        LEFT JOIN AgRemotePhoto rp ON i.id_local = rp.photo AND rp.url LIKE '%smugmug.com%'
+        WHERE k.genealogy LIKE ?
+          AND parent_coll.name LIKE '%SmugMug%'
+          AND k.name NOT LIKE '{%'
+    )
+    SELECT 
+        SpeciesName,
+        photo_count,
+        SmugMugUrl
+    FROM RankedPhotos
+    WHERE rn = 1;
+    """
+    
     print("Connecting to Lightroom Catalog...")
     with open_catalog() as cursor:
-        raw_results = fetch_published_species(cursor)
+        cursor.execute(query, (BIRD_ROOT,))
+        raw_results = cursor.fetchall()
         
-    # Extract (SpeciesName, SpeciesCount) and sort alphabetically
-    results = [(row[1], row[2]) for row in raw_results]
-    results.sort(key=lambda x: x[0])
+    # Sort alphabetically by species name
+    results = sorted(raw_results, key=lambda x: x[0])
         
     print(f"Generating alphabetical lifelist custom page for {len(results)} species...")
     html_content = generate_html_content(results)

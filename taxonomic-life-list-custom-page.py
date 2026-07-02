@@ -1,11 +1,21 @@
 #!/usr/bin/python3
 
 import os
+import sys
 import urllib.request
 import json
-from lrcat_utils import open_catalog, fetch_published_species
+from lrcat_utils import open_catalog, BIRD_ROOT
 
 OUTPUT_HTML = "html/taxonomic_life_list.html"
+
+def make_relative_url(url):
+    """Converts absolute SmugMug URLs into site-relative paths to optimize HTML size."""
+    if not url:
+        return ""
+    for domain in ["https://billwalker.smugmug.com", "https://www.birdwalker.com"]:
+        if url.startswith(domain):
+            return url[len(domain):]
+    return url
 
 def fetch_smugmug_galleries():
     """Queries SmugMug API to get currently active bird family gallery UrlNames."""
@@ -56,7 +66,7 @@ def generate_html_content(results, smugmug_gallery_names):
     list_items = []
     current_family = None
     
-    for raw_family, species, count in results:
+    for raw_family, species, count, url in results:
         # eBird family name with hyphens by default
         gallery_name = raw_family
         raw_family_with_hyphens = raw_family.replace(' ', '-')
@@ -78,10 +88,15 @@ def generate_html_content(results, smugmug_gallery_names):
             list_items.append("        " + family_item.strip())
             current_family = hyphen_gallery
             
-        url_name = species.replace(" ", "+")
-        search_link = f"https://billwalker.smugmug.com/search/?q={url_name}"
+        photo_url = make_relative_url(url)
+        if count == 1 and photo_url:
+            species_link = photo_url
+        else:
+            url_name = species.replace(" ", "+")
+            species_link = f"/search/?q={url_name}"
+            
         row_item = (row_template
-                    .replace("{{ LINK }}", search_link)
+                    .replace("{{ LINK }}", species_link)
                     .replace("{{ NAME }}", species)
                     .replace("{{ COUNT }}", str(count)))
         list_items.append("        " + row_item.strip())
@@ -125,9 +140,42 @@ def main():
     # Ensure html directory exists
     os.makedirs(os.path.dirname(OUTPUT_HTML), exist_ok=True)
     
+    query = """
+    WITH RankedPhotos AS (
+        SELECT 
+            parent_k.id_local AS FamilyId,
+            k.id_local AS SpeciesId,
+            parent_k.name AS FamilyGroup,
+            k.name AS SpeciesName,
+            rp.url AS SmugMugUrl,
+            ROW_NUMBER() OVER (PARTITION BY k.name ORDER BY i.captureTime ASC) as rn,
+            COUNT(*) OVER (PARTITION BY k.name) as photo_count
+        FROM AgLibraryKeyword k
+        JOIN AgLibraryKeyword parent_k ON k.parent = parent_k.id_local
+        JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
+        JOIN Adobe_images i ON ki.image = i.id_local
+        JOIN AgLibraryPublishedCollectionImage pci ON i.id_local = pci.image
+        JOIN AgLibraryPublishedCollection child_coll ON pci.collection = child_coll.id_local
+        JOIN AgLibraryPublishedCollection parent_coll ON child_coll.parent = parent_coll.id_local
+        LEFT JOIN AgRemotePhoto rp ON i.id_local = rp.photo AND rp.url LIKE '%smugmug.com%'
+        WHERE k.genealogy LIKE ?
+          AND parent_coll.name LIKE '%SmugMug%'
+          AND k.name NOT LIKE '{%'
+    )
+    SELECT 
+        FamilyGroup,
+        SpeciesName,
+        photo_count,
+        SmugMugUrl
+    FROM RankedPhotos
+    WHERE rn = 1
+    ORDER BY FamilyId, SpeciesId;
+    """
+    
     print("Connecting to Lightroom Catalog...")
     with open_catalog() as cursor:
-        results = fetch_published_species(cursor)
+        cursor.execute(query, (BIRD_ROOT,))
+        results = cursor.fetchall()
         
     print("Fetching SmugMug galleries list...")
     smugmug_galleries = fetch_smugmug_galleries()
