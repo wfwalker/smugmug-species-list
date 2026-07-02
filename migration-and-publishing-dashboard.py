@@ -50,6 +50,7 @@ def fetch_db_statistics(cursor):
     - missing_location_counts: dict of species -> count of photos missing locations
     - photos_missing_location: list of tuples (Species, Filename, Collection, Date)
     - earliest_photos: dict of Species -> {filename, collection, date, location}
+    - fully_migrated_species: set of species names that have at least one fully migrated published photo
     """
     
     # Query A: Label-based statistics (Legacy color label info)
@@ -332,18 +333,47 @@ def fetch_db_statistics(cursor):
             "location": formatted_loc
         }
 
+    # Query G: Find species with at least one published photo having label + keyword + location
+    query_fully_migrated = """
+    SELECT DISTINCT
+        k.name AS SpeciesName
+    FROM AgLibraryKeyword k
+    JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
+    JOIN Adobe_images i ON ki.image = i.id_local
+    JOIN AgLibraryPublishedCollectionImage pci ON i.id_local = pci.image
+    JOIN AgLibraryPublishedCollection child_coll ON pci.collection = child_coll.id_local
+    JOIN AgLibraryPublishedCollection parent_coll ON child_coll.parent = parent_coll.id_local 
+        AND parent_coll.name LIKE '%SmugMug%'
+    LEFT JOIN AgHarvestedIptcMetadata iptc ON i.id_local = iptc.image
+    WHERE k.genealogy LIKE ?
+      AND i.colorLabels = k.name
+      AND (
+          (iptc.locationRef IS NOT NULL AND iptc.locationRef != '') OR
+          (iptc.cityRef IS NOT NULL AND iptc.cityRef != '') OR
+          (iptc.stateRef IS NOT NULL AND iptc.stateRef != '') OR
+          (iptc.countryRef IS NOT NULL AND iptc.countryRef != '')
+      );
+    """
+
+    cursor.execute(query_fully_migrated, (BIRD_ROOT,))
+    fully_migrated_species = {row[0] for row in cursor.fetchall()}
+
     return (
         label_stats, 
         keyword_stats, 
         published_stats, 
         missing_location_counts, 
         photos_missing_location, 
-        earliest_photos
+        earliest_photos,
+        fully_migrated_species
     )
 
-def generate_report(label_stats, keyword_stats, published_stats, json_species, ebird_sightings, missing_location_counts):
+def generate_report(label_stats, keyword_stats, published_stats, json_species, ebird_sightings, missing_location_counts, fully_migrated_species):
     """Merges all sources into a unified list of species dicts, sorted in priority order."""
     all_species = set(label_stats.keys()).union(json_species).union(published_stats.keys())
+    
+    # Omit fully migrated species from the main table in Section 1
+    all_species = all_species - fully_migrated_species
 
     merged_rows = []
     for species in all_species:
@@ -704,7 +734,8 @@ def main():
             published_stats, 
             missing_location_counts, 
             photos_missing_location, 
-            earliest_photos
+            earliest_photos,
+            fully_migrated_species
         ) = fetch_db_statistics(cursor)
 
     print("Processing and merging statistics...")
@@ -714,7 +745,8 @@ def main():
         published_stats, 
         json_species, 
         ebird_sightings, 
-        missing_location_counts
+        missing_location_counts,
+        fully_migrated_species
     )
 
     print("Saving dashboard report...")
