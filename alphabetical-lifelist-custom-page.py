@@ -6,24 +6,35 @@ from lrcat_utils import open_catalog, fetch_published_species
 OUTPUT_HTML = "html/alphabetical_life_list.html"
 
 def generate_html_content(results):
-    """Generates HTML content utilizing the shared base template."""
-    # 1. Load layout template
-    template_path = os.path.join(os.path.dirname(__file__), "templates", "base_layout.html")
-    with open(template_path, "r", encoding="utf-8") as f:
+    """Generates HTML content utilizing the shared base template and partials."""
+    # 1. Load layout template and partials
+    base_dir = os.path.dirname(__file__)
+    with open(os.path.join(base_dir, "templates", "base_layout.html"), "r", encoding="utf-8") as f:
         html = f.read()
+    with open(os.path.join(base_dir, "templates", "row_simple.html"), "r", encoding="utf-8") as f:
+        row_template = f.read()
+    with open(os.path.join(base_dir, "templates", "row_letter_header.html"), "r", encoding="utf-8") as f:
+        header_template = f.read()
         
     # 2. Build species list
-    content = '    <ul class="species-grid">\n'
+    list_items = []
     current_letter = None
     for name, count in results:
         first_letter = name[0].upper()
         if first_letter != current_letter:
             current_letter = first_letter
-            content += f'        <li class="letter-heading">{current_letter}</li>\n'
+            header_item = header_template.replace("{{ LETTER }}", current_letter)
+            list_items.append("        " + header_item.strip())
             
         url_name = name.replace(" ", "+")
-        content += f'        <li><a href="https://billwalker.smugmug.com/search/?q={url_name}">{name} ({count})</a></li>\n'
-    content += "    </ul>"
+        search_link = f"https://billwalker.smugmug.com/search/?q={url_name}"
+        row_item = (row_template
+                    .replace("{{ LINK }}", search_link)
+                    .replace("{{ NAME }}", name)
+                    .replace("{{ COUNT }}", str(count)))
+        list_items.append("        " + row_item.strip())
+        
+    content = '<ul class="species-grid">\n' + "\n".join(list_items) + '\n    </ul>'
     
     # 3. Page-specific CSS rules
     styles = """

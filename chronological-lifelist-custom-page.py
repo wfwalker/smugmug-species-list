@@ -161,25 +161,24 @@ def fetch_earliest_published_photos(cursor):
 # --- HTML GENERATOR ---
 
 def generate_html_content(chronological_data, total_seen_count):
-    """Generates HTML content utilizing the shared base template."""
-    # 1. Load layout template
-    template_path = os.path.join(os.path.dirname(__file__), "templates", "base_layout.html")
-    with open(template_path, "r", encoding="utf-8") as f:
+    """Generates HTML content utilizing the shared base template and partials."""
+    # 1. Load layout template and partials
+    base_dir = os.path.dirname(__file__)
+    with open(os.path.join(base_dir, "templates", "base_layout.html"), "r", encoding="utf-8") as f:
         html = f.read()
+    with open(os.path.join(base_dir, "templates", "chronological_section.html"), "r", encoding="utf-8") as f:
+        section_template = f.read()
+    with open(os.path.join(base_dir, "templates", "chronological_row_photo.html"), "r", encoding="utf-8") as f:
+        row_photo_template = f.read()
+    with open(os.path.join(base_dir, "templates", "chronological_row_text.html"), "r", encoding="utf-8") as f:
+        row_text_template = f.read()
 
     # 2. Build grid content
-    content = ""
+    content_sections = []
     sorted_years = sorted(chronological_data.keys(), reverse=True)
     
     for year in sorted_years:
-        content += f'    <div class="year-section">\n'
-        content += f'        <h2 class="year-heading">{year}</h2>\n'
-        content += f'        <div class="timeline-table">\n'
-        content += f'            <div class="table-header">Date</div>\n'
-        content += f'            <div class="table-header">Species</div>\n'
-        content += f'            <div class="table-header">Location</div>\n'
-        content += f'            <div class="table-header">Earliest Photo</div>\n'
-        
+        row_items = []
         # Sighting list is already sorted by date descending (latest first)
         for item in chronological_data[year]:
             species_name = item["name"]
@@ -187,38 +186,39 @@ def generate_html_content(chronological_data, total_seen_count):
             ebird_loc = item["ebird_location"]
             photo = item["photo"]
             
-            content += '<div class="table-row">'
-            content += f'<div class="table-cell date-cell">{ebird_date}</div>'
-            
-            # Species cell
-            content += '<div class="table-cell species-cell">'
             if photo:
                 photo_url = make_relative_url(photo.get("url"))
+                
+                # Check link type
                 if photo.get("photo_count", 0) == 1 and photo_url:
-                    content += f'<a href="{photo_url}" class="species-link">{species_name}</a>'
+                    species_link = photo_url
                 else:
                     url_name = species_name.replace(" ", "+")
-                    content += f'<a href="/search/?q={url_name}" class="species-link">{species_name}</a>'
+                    species_link = f"/search/?q={url_name}"
+                    
+                photo_link = make_relative_url(photo["url"])
+                row_item = (row_photo_template
+                            .replace("{{ DATE }}", ebird_date)
+                            .replace("{{ SPECIES_LINK }}", species_link)
+                            .replace("{{ SPECIES_NAME }}", species_name)
+                            .replace("{{ SIGHTING_LOCATION }}", ebird_loc)
+                            .replace("{{ PHOTO_LINK }}", photo_link)
+                            .replace("{{ PHOTO_DATE }}", photo["date"])
+                            .replace("{{ PHOTO_LOCATION }}", photo["location"]))
             else:
-                content += f'<span class="species-text">{species_name}</span>'
-            content += '</div>'
+                row_item = (row_text_template
+                            .replace("{{ DATE }}", ebird_date)
+                            .replace("{{ SPECIES_NAME }}", species_name)
+                            .replace("{{ SIGHTING_LOCATION }}", ebird_loc))
+            row_items.append("            " + row_item.strip())
             
-            # Location cell
-            content += f'<div class="table-cell location-cell">{ebird_loc}</div>'
-            
-            # Earliest Photo cell (fourth column)
-            content += '<div class="table-cell photo-cell">'
-            if photo:
-                photo_url = make_relative_url(photo["url"])
-                content += f'<a href="{photo_url}" class="photo-link">📷 {photo["date"]}</a> @ {photo["location"]}'
-            else:
-                content += '<span style="color: #444;">—</span>'
-            content += '</div>'
-            
-            content += '</div>\n'
-            
-        content += f'        </div>\n'
-        content += f'    </div>\n\n'
+        # Combine section template
+        section_html = (section_template
+                        .replace("{{ YEAR }}", year)
+                        .replace("{{ ROWS }}", "\n".join(row_items)))
+        content_sections.append(section_html)
+        
+    content = "\n".join(content_sections)
 
     # Calculate global totals
     total_photographed = sum(
