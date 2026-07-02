@@ -48,13 +48,26 @@ def generate_html_content(results, smugmug_gallery_names):
 <html>
 <head>
     <style>
-        body {{ font-family: sans-serif; padding: 40px; }}
+        body {{ font-family: sans-serif; padding: 40px; background-color: #111; color: #eee; }}
         .species-grid {{ 
             column-count: 3; column-gap: 40px; 
             list-style: none; padding: 0; 
         }}
         .species-grid li {{ margin-bottom: 8px; break-inside: avoid; }}
-        a {{ text-decoration: none; }}
+        .letter-heading {{ 
+            font-size: 1.3em; 
+            font-weight: bold; 
+            margin-top: 20px; 
+            margin-bottom: 10px; 
+            border-bottom: 2px solid #444;
+            padding-bottom: 4px;
+            color: #fff;
+            break-inside: avoid;
+        }}
+        .letter-heading:first-child {{ margin-top: 0; }}
+        .letter-heading a {{ color: #fff; text-decoration: none; }}
+        .letter-heading a:hover {{ text-decoration: underline; }}
+        a {{ text-decoration: none; color: #4db8ff; }}
         a:hover {{ text-decoration: underline; }}
         .sm-user-ui h3 {{ padding-bottom: 16px; padding-top: 8px; }}
     </style>
@@ -72,24 +85,21 @@ def generate_html_content(results, smugmug_gallery_names):
         raw_family_with_hyphens = raw_family.replace(' ', '-')
         hyphen_gallery = raw_family_with_hyphens
         
-        # custom mapping mapping checks
+        # custom mapping checks
         if raw_family_with_hyphens in gallery_mapping:
             hyphen_gallery = gallery_mapping[raw_family_with_hyphens]
             gallery_name = hyphen_gallery.replace('-', ' ')
             
         if hyphen_gallery != current_family:
-            if current_family is not None:
-                html_content += "</ul>\n"
-                
             if smugmug_gallery_names and hyphen_gallery not in smugmug_gallery_names:
                 print(f"unknown family gallery name {hyphen_gallery}")
                 
             family_link = "https://billwalker.smugmug.com/Bird-Families/" + hyphen_gallery
-            html_content += f'<h3><a href="{family_link}">{gallery_name}</a></h3>\n<ul>\n'
+            html_content += f'        <li class="letter-heading"><a href="{family_link}">{gallery_name}</a></li>\n'
             current_family = hyphen_gallery
             
         url_name = species.replace(" ", "+")
-        html_content += f'  <li><a href="https://billwalker.smugmug.com/search/?q={url_name}">{species} ({count})</a></li>\n'
+        html_content += f'        <li><a href="https://billwalker.smugmug.com/search/?q={url_name}">{species} ({count})</a></li>\n'
         
     html_content += "    </ul>\n</body>\n</html>"
     return html_content
