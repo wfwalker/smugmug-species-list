@@ -4,18 +4,9 @@ import os
 import sys
 import urllib.request
 import json
-from lrcat_utils import open_catalog, BIRD_ROOT
+from lrcat_utils import open_catalog, BIRD_ROOT, make_relative_url
 
 OUTPUT_HTML = "html/taxonomic_life_list.html"
-
-def make_relative_url(url):
-    """Converts absolute SmugMug URLs into site-relative paths to optimize HTML size."""
-    if not url:
-        return ""
-    for domain in ["https://billwalker.smugmug.com", "https://www.birdwalker.com"]:
-        if url.startswith(domain):
-            return url[len(domain):]
-    return url
 
 def fetch_smugmug_galleries():
     """Queries SmugMug API to get currently active bird family gallery UrlNames."""

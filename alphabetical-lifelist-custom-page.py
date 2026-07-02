@@ -2,18 +2,9 @@
 
 import os
 import sys
-from lrcat_utils import open_catalog, BIRD_ROOT
+from lrcat_utils import open_catalog, BIRD_ROOT, make_relative_url
 
 OUTPUT_HTML = "html/alphabetical_life_list.html"
-
-def make_relative_url(url):
-    """Converts absolute SmugMug URLs into site-relative paths to optimize HTML size."""
-    if not url:
-        return ""
-    for domain in ["https://billwalker.smugmug.com", "https://www.birdwalker.com"]:
-        if url.startswith(domain):
-            return url[len(domain):]
-    return url
 
 def generate_html_content(results):
     """Generates HTML content utilizing the shared base template and partials."""

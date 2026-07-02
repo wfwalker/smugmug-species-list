@@ -4,7 +4,7 @@ import sys
 import os
 import json
 import subprocess
-from lrcat_utils import open_catalog, BIRD_ROOT
+from lrcat_utils import open_catalog, BIRD_ROOT, format_location
 
 def load_json_photos(json_path, species_name):
     """Loads matching photos from the JSON file for the given species (case-insensitive)."""
@@ -59,17 +59,6 @@ def query_lr_photos(cursor, species_name):
     cursor.execute(query, (BIRD_ROOT, species_name, species_name))
     return cursor.fetchall()
 
-def format_lr_location(loc, city, state, country):
-    parts = []
-    if loc and loc != 'No Location':
-        parts.append(loc)
-    if city and city != 'No City' and city != loc:
-        parts.append(city)
-    if state:
-        parts.append(state)
-    if country:
-        parts.append(country)
-    return ", ".join(parts) if parts else "N/A"
 
 def format_json_location(loc, county, state_prov):
     parts = []
@@ -174,7 +163,7 @@ def main():
             idx_str = f"[{i + 1}]"
             filename = r[0]
             date_str = r[1][:10] if r[1] else "N/A"
-            location = format_lr_location(r[2], r[3], r[4], r[5])
+            location = format_location(r[2], r[3], r[4], r[5])
             print(f"{idx_str:<5}{filename:<{fn_width}}{date_str:<{dt_width}}{location}")
             
     # Section B: JSON published photos (Old website)

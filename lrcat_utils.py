@@ -61,3 +61,25 @@ def fetch_published_species(cursor):
     """
     cursor.execute(query, (BIRD_ROOT,))
     return cursor.fetchall()
+
+def make_relative_url(url):
+    """Converts absolute SmugMug URLs into site-relative paths to optimize HTML size."""
+    if not url:
+        return ""
+    for domain in ["https://billwalker.smugmug.com", "https://www.birdwalker.com"]:
+        if url.startswith(domain):
+            return url[len(domain):]
+    return url
+
+def format_location(loc, city, state, country):
+    """Formats Lightroom location components into a readable string."""
+    parts = []
+    if loc and loc != 'No Location':
+        parts.append(loc)
+    if city and city != 'No City' and city != loc:
+        parts.append(city)
+    if state:
+        parts.append(state)
+    if country:
+        parts.append(country)
+    return ", ".join(parts) if parts else "Unknown Location"

@@ -6,34 +6,10 @@ import json
 import sys
 from datetime import datetime
 from collections import defaultdict
-from lrcat_utils import open_catalog, BIRD_ROOT
+from lrcat_utils import open_catalog, BIRD_ROOT, make_relative_url, format_location
 
 OUTPUT_HTML = "html/chronological_life_list.html"
 EBIRD_CSV = "ebird.csv"
-
-# --- LOCATION FORMATTER ---
-
-def format_location(loc, city, state, country):
-    """Formats Lightroom location components into a readable string."""
-    parts = []
-    if loc and loc != 'No Location':
-        parts.append(loc)
-    if city and city != 'No City' and city != loc:
-        parts.append(city)
-    if state:
-        parts.append(state)
-    if country:
-        parts.append(country)
-    return ", ".join(parts) if parts else "Unknown Location"
-
-def make_relative_url(url):
-    """Converts absolute SmugMug URLs into site-relative paths to optimize HTML size."""
-    if not url:
-        return ""
-    for domain in ["https://billwalker.smugmug.com", "https://www.birdwalker.com"]:
-        if url.startswith(domain):
-            return url[len(domain):]
-    return url
 
 # --- EBIRD CSV PARSER ---
 
