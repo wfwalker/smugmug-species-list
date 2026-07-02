@@ -29,7 +29,12 @@ def fetch_smugmug_galleries():
         return []
 
 def generate_html_content(results, smugmug_gallery_names):
-    """Generates complete HTML content matching the original formatting and grouping logic exactly."""
+    """Generates HTML content utilizing the shared base template."""
+    # 1. Load layout template
+    template_path = os.path.join(os.path.dirname(__file__), "templates", "base_layout.html")
+    with open(template_path, "r", encoding="utf-8") as f:
+        html = f.read()
+        
     gallery_mapping = {
         "Vireos-Shrike-Babblers-and-Erpornis": "Vireos-and-Allies",
         "Southern-Storm-Petrels": "Storm-Petrels",
@@ -43,40 +48,8 @@ def generate_html_content(results, smugmug_gallery_names):
         "Osprey": "Birds-of-Prey",
     }
     
-    html_content = f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body {{ font-family: sans-serif; padding: 40px; background-color: #111; color: #eee; }}
-        .species-grid {{ 
-            column-count: 3; column-gap: 40px; 
-            list-style: none; padding: 0; 
-        }}
-        .species-grid li {{ margin-bottom: 8px; break-inside: avoid; }}
-        .letter-heading {{ 
-            font-size: 1.3em; 
-            font-weight: bold; 
-            margin-top: 20px; 
-            margin-bottom: 10px; 
-            border-bottom: 2px solid #444;
-            padding-bottom: 4px;
-            color: #fff;
-            break-inside: avoid;
-        }}
-        .letter-heading:first-child {{ margin-top: 0; }}
-        .letter-heading a {{ color: #fff; text-decoration: none; }}
-        .letter-heading a:hover {{ text-decoration: underline; }}
-        a {{ text-decoration: none; color: #4db8ff; }}
-        a:hover {{ text-decoration: underline; }}
-        .sm-user-ui h3 {{ padding-bottom: 16px; padding-top: 8px; }}
-    </style>
-</head>
-<body>
-    <h1>Bill's Taxonomic Photo Life List ({len(results)} species)</h1>
-    <ul class="species-grid">
-"""
-    
+    # 2. Build species list
+    content = '    <ul class="species-grid">\n'
     current_family = None
     
     for raw_family, species, count in results:
@@ -95,14 +68,45 @@ def generate_html_content(results, smugmug_gallery_names):
                 print(f"unknown family gallery name {hyphen_gallery}")
                 
             family_link = "https://billwalker.smugmug.com/Bird-Families/" + hyphen_gallery
-            html_content += f'        <li class="letter-heading"><a href="{family_link}">{gallery_name}</a></li>\n'
+            content += f'        <li class="letter-heading"><a href="{family_link}">{gallery_name}</a></li>\n'
             current_family = hyphen_gallery
             
         url_name = species.replace(" ", "+")
-        html_content += f'        <li><a href="https://billwalker.smugmug.com/search/?q={url_name}">{species} ({count})</a></li>\n'
-        
-    html_content += "    </ul>\n</body>\n</html>"
-    return html_content
+        content += f'        <li><a href="https://billwalker.smugmug.com/search/?q={url_name}">{species} ({count})</a></li>\n'
+    content += "    </ul>"
+    
+    # 3. Page-specific CSS rules
+    styles = """
+        .species-grid { 
+            column-count: 3; column-gap: 40px; 
+            list-style: none; padding: 0; margin: 0;
+        }
+        .species-grid li { margin-bottom: 8px; break-inside: avoid; }
+        .letter-heading { 
+            font-size: 1.3em; 
+            font-weight: bold; 
+            margin-top: 20px; 
+            margin-bottom: 10px; 
+            border-bottom: 2px solid #444;
+            padding-bottom: 4px;
+            color: #fff;
+            break-inside: avoid;
+        }
+        .letter-heading:first-child { margin-top: 0; }
+        .letter-heading a { color: #fff; text-decoration: none; }
+        .letter-heading a:hover { text-decoration: underline; }
+        a { color: #4db8ff; }
+        .sm-user-ui h3 { padding-bottom: 16px; padding-top: 8px; }
+    """
+    
+    # 4. Perform substitutions
+    html = html.replace("{{ PAGE_TITLE }}", "Bill's Taxonomic Photo Life List")
+    html = html.replace("{{ HEADER_TITLE }}", "Bill's Taxonomic Photo Life List")
+    html = html.replace("{{ STATS_HEADER }}", f"({len(results)} species)")
+    html = html.replace("{{ PAGE_SPECIFIC_STYLES }}", styles)
+    html = html.replace("{{ CONTENT }}", content)
+    
+    return html
 
 def main():
     # Ensure html directory exists

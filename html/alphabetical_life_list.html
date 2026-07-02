@@ -1,12 +1,16 @@
-
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
+    <title>Bill's Photo Life List</title>
     <style>
         body { font-family: sans-serif; padding: 40px; background-color: #111; color: #eee; }
+        a { text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        
         .species-grid { 
             column-count: 3; column-gap: 40px; 
-            list-style: none; padding: 0; 
+            list-style: none; padding: 0; margin: 0;
         }
         .species-grid li { margin-bottom: 8px; break-inside: avoid; }
         .letter-heading { 
@@ -20,14 +24,16 @@
             break-inside: avoid;
         }
         .letter-heading:first-child { margin-top: 0; }
-        a { text-decoration: none; color: #4db8ff; }
-        a:hover { text-decoration: underline; }
+        a { color: #4db8ff; }
         .sm-user-ui h3 { padding-bottom: 16px; padding-top: 8px; }
+    
     </style>
 </head>
 <body>
-    <h1>Bill's Photo Life List (925 species)</h1>
-    <ul class="species-grid">
+    <h1>Bill's Photo Life List</h1>
+    <p style="color: #aaa; margin-bottom: 30px;">(925 species)</p>
+    
+        <ul class="species-grid">
         <li class="letter-heading">A</li>
         <li><a href="https://billwalker.smugmug.com/search/?q=Acorn+Woodpecker">Acorn Woodpecker (2)</a></li>
         <li><a href="https://billwalker.smugmug.com/search/?q=Adelie+Penguin">Adelie Penguin (11)</a></li>
