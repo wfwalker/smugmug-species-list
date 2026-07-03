@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{ PAGE_TITLE }}</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; background-color: #111; color: #eee; }
+        a { text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        {{ PAGE_SPECIFIC_STYLES }}
+    </style>
+</head>
+<body>
+    <h1>{{ HEADER_TITLE }}</h1>
+    <p style="color: #aaa; margin-bottom: 30px;">{{ STATS_HEADER }}</p>
+    
+    {{ CONTENT }}
+</body>
+</html>
