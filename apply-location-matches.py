@@ -55,8 +55,20 @@ def load_ebird_locations(csv_path):
         sys.exit(1)
     return ebird_locs
 
+EXCLUDED_TAGS = ["People", "Wildlife"]
+
 def fetch_published_photos_without_location(cursor):
     """Queries Lightroom for all published photos missing location details."""
+    excluded_tags_sql = ", ".join(f"'{tag}'" for tag in EXCLUDED_TAGS)
+    exclude_clause = f"""
+      AND i.id_local NOT IN (
+          SELECT ki_ex.image 
+          FROM AgLibraryKeywordImage ki_ex
+          JOIN AgLibraryKeyword k_ex ON ki_ex.tag = k_ex.id_local
+          WHERE k_ex.name IN ({excluded_tags_sql})
+      )
+    """
+
     query = """
     SELECT DISTINCT
         SpeciesName,
@@ -88,6 +100,7 @@ def fetch_published_photos_without_location(cursor):
           AND (iptc.cityRef IS NULL OR iptc.cityRef = '')
           AND (iptc.stateRef IS NULL OR iptc.stateRef = '')
           AND (iptc.countryRef IS NULL OR iptc.countryRef = '')
+          {exclude_clause}
         
         UNION ALL
         
@@ -114,9 +127,11 @@ def fetch_published_photos_without_location(cursor):
           AND (iptc.cityRef IS NULL OR iptc.cityRef = '')
           AND (iptc.stateRef IS NULL OR iptc.stateRef = '')
           AND (iptc.countryRef IS NULL OR iptc.countryRef = '')
+          {exclude_clause}
     )
     ORDER BY SpeciesName, CaptureTime;
-    """
+    """.replace("{exclude_clause}", exclude_clause)
+    
     cursor.execute(query, (BIRD_ROOT,))
     return cursor.fetchall()
 

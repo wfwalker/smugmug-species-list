@@ -9,6 +9,8 @@ REPORTS_DIR = "reports"
 OUTPUT_CSV = os.path.join(REPORTS_DIR, "bird_migration_dashboard.csv")
 OUTPUT_HTML = os.path.join(REPORTS_DIR, "bird_migration_dashboard.html")
 
+EXCLUDED_TAGS = ["People", "Wildlife", "Ice", "Landscape", "Plant", "Lichen"]
+
 def load_json_species(json_path):
     """Loads unique bird species common names from the photos-ebird-mybird.json file."""
     if not os.path.exists(json_path):
@@ -53,6 +55,16 @@ def fetch_db_statistics(cursor):
     - fully_migrated_species: set of species names that have at least one fully migrated published photo
     """
     
+    excluded_tags_sql = ", ".join(f"'{tag}'" for tag in EXCLUDED_TAGS)
+    exclude_clause = f"""
+      AND i.id_local NOT IN (
+          SELECT ki_ex.image 
+          FROM AgLibraryKeywordImage ki_ex
+          JOIN AgLibraryKeyword k_ex ON ki_ex.tag = k_ex.id_local
+          WHERE k_ex.name IN ({excluded_tags_sql})
+      )
+    """
+    
     # Query A: Label-based statistics (Legacy color label info)
     query_label = """
     SELECT 
@@ -68,6 +80,7 @@ def fetch_db_statistics(cursor):
         ON i.id_local = ki.image AND k.id_local = ki.tag
     WHERE i.colorLabels != '' 
       AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple')
+      {exclude_clause}
     GROUP BY i.colorLabels;
     """
 
@@ -80,6 +93,7 @@ def fetch_db_statistics(cursor):
     JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
     JOIN Adobe_images i ON ki.image = i.id_local
     WHERE k.genealogy LIKE ?
+      {exclude_clause}
     GROUP BY k.name;
     """
 
@@ -99,6 +113,7 @@ def fetch_db_statistics(cursor):
             AND parent_coll.name LIKE '%SmugMug%'
         WHERE i.colorLabels != '' 
           AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple')
+          {exclude_clause}
         
         UNION
         
@@ -113,6 +128,7 @@ def fetch_db_statistics(cursor):
         JOIN AgLibraryPublishedCollection parent_coll ON child_coll.parent = parent_coll.id_local 
             AND parent_coll.name LIKE '%SmugMug%'
         WHERE k.genealogy LIKE ?
+          {exclude_clause}
     )
     GROUP BY SpeciesName;
     """
@@ -138,6 +154,7 @@ def fetch_db_statistics(cursor):
           AND (iptc.cityRef IS NULL OR iptc.cityRef = '')
           AND (iptc.stateRef IS NULL OR iptc.stateRef = '')
           AND (iptc.countryRef IS NULL OR iptc.countryRef = '')
+          {exclude_clause}
         
         UNION ALL
         
@@ -157,6 +174,7 @@ def fetch_db_statistics(cursor):
           AND (iptc.cityRef IS NULL OR iptc.cityRef = '')
           AND (iptc.stateRef IS NULL OR iptc.stateRef = '')
           AND (iptc.countryRef IS NULL OR iptc.countryRef = '')
+          {exclude_clause}
     )
     GROUP BY SpeciesName;
     """
@@ -187,6 +205,7 @@ def fetch_db_statistics(cursor):
           AND (iptc.cityRef IS NULL OR iptc.cityRef = '')
           AND (iptc.stateRef IS NULL OR iptc.stateRef = '')
           AND (iptc.countryRef IS NULL OR iptc.countryRef = '')
+          {exclude_clause}
           
         UNION ALL
         
@@ -209,6 +228,7 @@ def fetch_db_statistics(cursor):
           AND (iptc.cityRef IS NULL OR iptc.cityRef = '')
           AND (iptc.stateRef IS NULL OR iptc.stateRef = '')
           AND (iptc.countryRef IS NULL OR iptc.countryRef = '')
+          {exclude_clause}
     )
     ORDER BY SpeciesName, CaptureTime;
     """
@@ -249,6 +269,7 @@ def fetch_db_statistics(cursor):
             LEFT JOIN AgInternedIptcCountry country ON iptc.countryRef = country.id_local
             WHERE i.colorLabels != '' 
               AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple')
+              {exclude_clause}
               
             UNION ALL
             
@@ -275,6 +296,7 @@ def fetch_db_statistics(cursor):
             LEFT JOIN AgInternedIptcState state ON iptc.stateRef = state.id_local
             LEFT JOIN AgInternedIptcCountry country ON iptc.countryRef = country.id_local
             WHERE k.genealogy LIKE ?
+              {exclude_clause}
         )
     )
     SELECT 
@@ -289,6 +311,38 @@ def fetch_db_statistics(cursor):
     FROM RankedPhotos
     WHERE rn = 1;
     """
+
+    # Query G: Find species with at least one published photo having label + keyword + location
+    query_fully_migrated = """
+    SELECT DISTINCT
+        k.name AS SpeciesName
+    FROM AgLibraryKeyword k
+    JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
+    JOIN Adobe_images i ON ki.image = i.id_local
+    JOIN AgLibraryPublishedCollectionImage pci ON i.id_local = pci.image
+    JOIN AgLibraryPublishedCollection child_coll ON pci.collection = child_coll.id_local
+    JOIN AgLibraryPublishedCollection parent_coll ON child_coll.parent = parent_coll.id_local 
+        AND parent_coll.name LIKE '%SmugMug%'
+    LEFT JOIN AgHarvestedIptcMetadata iptc ON i.id_local = iptc.image
+    WHERE k.genealogy LIKE ?
+      AND i.colorLabels = k.name
+      AND (
+          (iptc.locationRef IS NOT NULL AND iptc.locationRef != '') OR
+          (iptc.cityRef IS NOT NULL AND iptc.cityRef != '') OR
+          (iptc.stateRef IS NOT NULL AND iptc.stateRef != '') OR
+          (iptc.countryRef IS NOT NULL AND iptc.countryRef != '')
+      )
+      {exclude_clause};
+    """
+
+    # Bulk replacement of placeholders
+    query_label = query_label.replace("{exclude_clause}", exclude_clause)
+    query_keyword = query_keyword.replace("{exclude_clause}", exclude_clause)
+    query_published = query_published.replace("{exclude_clause}", exclude_clause)
+    query_missing_location_counts = query_missing_location_counts.replace("{exclude_clause}", exclude_clause)
+    query_photos_missing_location = query_photos_missing_location.replace("{exclude_clause}", exclude_clause)
+    query_earliest_photos = query_earliest_photos.replace("{exclude_clause}", exclude_clause)
+    query_fully_migrated = query_fully_migrated.replace("{exclude_clause}", exclude_clause)
 
     # Fetch label data
     cursor.execute(query_label, (BIRD_ROOT,))
