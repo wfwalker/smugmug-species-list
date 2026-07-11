@@ -86,7 +86,7 @@ def fetch_earliest_published_photos(cursor):
         JOIN AgLibraryPublishedCollectionImage pci ON i.id_local = pci.image
         JOIN AgLibraryPublishedCollection child_coll ON pci.collection = child_coll.id_local
         JOIN AgLibraryPublishedCollection parent_coll ON child_coll.parent = parent_coll.id_local
-        LEFT JOIN AgRemotePhoto rp ON i.id_local = rp.photo AND rp.url LIKE '%smugmug.com%'
+        LEFT JOIN AgRemotePhoto rp ON i.id_local = rp.photo AND rp.collection = pci.collection
         LEFT JOIN AgHarvestedIptcMetadata iptc ON i.id_local = iptc.image
         LEFT JOIN AgInternedIptcLocation loc ON iptc.locationRef = loc.id_local
         LEFT JOIN AgInternedIptcCity city ON iptc.cityRef = city.id_local

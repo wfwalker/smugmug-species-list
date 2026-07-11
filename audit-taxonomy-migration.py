@@ -20,6 +20,9 @@ RENAME_MAPS = {
     "Guianan Trogon": "Guianan Violaceous Trogon",
     "Northern Black-throated Trogon": "Graceful Black-throated Trogon",
     "Eurasian Hoopoe": "Common Hoopoe",
+    "Cherrie's Tanager": "Scarlet-rumped Tanager",
+    "Passerini's Tanager": "Scarlet-rumped Tanager",
+    "Mealy Parrot": "Mealy Amazon",
 }
 
 SPLIT_MAPS = {
@@ -34,7 +37,6 @@ LUMP_MAPS = {
     "Antarctic Shag": "Imperial Cormorant",
     "Macquarie Shag": "Imperial Cormorant",
     "South Georgia Shag": "Imperial Cormorant",
-    "Imperial Cormorant": "Imperial Cormorant",
 }
 
 # Case-insensitive maps for lookup safety
@@ -359,6 +361,8 @@ def main():
         # 1. Check if it's a rename
         if name_lower in RENAME_MAPS_LOWER:
             original, suggested = RENAME_MAPS_LOWER[name_lower]
+            if original.lower().strip() == suggested.lower().strip():
+                continue
             migration_items.append({
                 "filename": filename,
                 "lr_path": lr_ref,
@@ -373,6 +377,8 @@ def main():
         # 2. Check if it's a lump
         elif name_lower in LUMP_MAPS_LOWER:
             original, suggested = LUMP_MAPS_LOWER[name_lower]
+            if original.lower().strip() == suggested.lower().strip():
+                continue
             migration_items.append({
                 "filename": filename,
                 "lr_path": lr_ref,
@@ -413,7 +419,7 @@ def main():
     print(f"Audited matches completed. Generating reports...")
     os.makedirs(REPORTS_DIR, exist_ok=True)
     save_to_csv(OUTPUT_CSV, migration_items)
-    save_to_html(OUTPUT_HTML, migration_items, len(rows))
+    save_to_html(OUTPUT_HTML, migration_items, len(migration_items))
     
     print(f"✅ Success! Reports generated:")
     print(f"   • CSV:  {OUTPUT_CSV}")
