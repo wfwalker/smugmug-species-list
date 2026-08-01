@@ -25,6 +25,24 @@ def load_json_species(json_path):
         print(f"⚠️ Error loading JSON file: {e}")
         return set()
 
+def load_valid_taxonomy_names(taxonomy_path):
+    """Loads all valid English common names from the eBird taxonomy CSV file."""
+    valid_names = set()
+    if not os.path.exists(taxonomy_path):
+        print(f"⚠️ Warning: Taxonomy file not found at {taxonomy_path}")
+        return valid_names
+        
+    try:
+        with open(taxonomy_path, mode='r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                com_name = row.get("PRIMARY_COM_NAME")
+                if com_name:
+                    valid_names.add(com_name.strip())
+    except Exception as e:
+        print(f"⚠️ Error parsing taxonomy CSV: {e}")
+    return valid_names
+
 def parse_ebird_sightings(csv_path):
     """Parses eBird CSV file and returns a set of unique common names seen."""
     if not os.path.exists(csv_path):
@@ -422,17 +440,20 @@ def fetch_db_statistics(cursor):
         fully_migrated_species
     )
 
-def generate_report(label_stats, keyword_stats, published_stats, json_species, ebird_sightings, missing_location_counts, fully_migrated_species):
+def generate_report(label_stats, keyword_stats, published_stats, json_species, ebird_sightings, missing_location_counts, fully_migrated_species, valid_taxonomy_names):
     """Merges all sources into a unified list of species dicts, sorted in priority order."""
     all_species = set(label_stats.keys()).union(json_species).union(published_stats.keys())
     
     # Omit fully migrated species from the main table in Section 1
     all_species = all_species - fully_migrated_species
 
+    valid_names_lower = {n.lower() for n in valid_taxonomy_names} if valid_taxonomy_names else set()
+
     merged_rows = []
     for species in all_species:
         in_json = "Yes" if species in json_species else "No"
         in_ebird = "Yes" if species in ebird_sightings else "No"
+        is_valid_taxonomy = "Yes" if (not valid_taxonomy_names or species.lower() in valid_names_lower) else "No"
         
         l_stats = label_stats.get(species, {})
         total_label = l_stats.get("total_label", 0)
@@ -446,6 +467,7 @@ def generate_report(label_stats, keyword_stats, published_stats, json_species, e
             "species_name": species,
             "in_json": in_json,
             "in_ebird": in_ebird,
+            "is_valid_taxonomy": is_valid_taxonomy,
             "total_label": total_label,
             "total_keyword": total_keyword,
             "published_count": published_count,
@@ -454,23 +476,26 @@ def generate_report(label_stats, keyword_stats, published_stats, json_species, e
         })
 
     # Sorting logic:
-    # 1. Species in JSON but not published to SmugMug first (high priority action item)
-    # 2. Species published to SmugMug but not in eBird (taxonomic name mismatches)
-    # 3. Species with published photos missing location details
-    # 4. Species needing Lightroom tagging (needs_tagging > 0)
-    # 5. Total label photos descending
-    # 6. Species name alphabetical
+    # 1. Obsolete or typo names (not in eBird taxonomy)
+    # 2. Species in JSON but not published to SmugMug first (high priority action item)
+    # 3. Species published to SmugMug but not in eBird (taxonomic name mismatches)
+    # 4. Species with published photos missing location details
+    # 5. Species needing Lightroom tagging (needs_tagging > 0)
+    # 6. Total label photos descending
+    # 7. Species name alphabetical
     def sort_key(item):
+        is_invalid_tax = 1 if item["is_valid_taxonomy"] == "No" else 0
         is_json_unpublished = 1 if (item["in_json"] == "Yes" and item["published_count"] == 0) else 0
         is_published_no_ebird = 1 if (item["published_count"] > 0 and item["in_ebird"] == "No") else 0
         has_missing_location = 1 if (item["missing_loc_count"] > 0) else 0
         return (
+            -is_invalid_tax,
             -is_json_unpublished,
             -is_published_no_ebird,
             -has_missing_location,
             -item["needs_tagging"],
             -item["total_label"],
-            item["species_name"]
+            item["species_name"].lower()
         )
 
     merged_rows.sort(key=sort_key)
@@ -505,7 +530,7 @@ def save_to_csv(output_path, merged_rows):
             ])
 
 def save_to_html(output_path, merged_rows, photos_missing_location, earliest_photos):
-    """Writes the dashboard report to an HTML file using layout and section templates."""
+    """Writes the unified species-centric dashboard report to an HTML file."""
     base_dir = os.path.dirname(__file__)
     
     # 1. Load layout template
@@ -513,17 +538,9 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
     with open(layout_path, "r", encoding="utf-8") as f:
         html = f.read()
         
-    # 2. Load partials
+    # 2. Load summary panel template
     with open(os.path.join(base_dir, "templates", "dashboard_summary.html"), "r") as f:
         summary_template = f.read()
-    with open(os.path.join(base_dir, "templates", "dashboard_section.html"), "r") as f:
-        section_template = f.read()
-    with open(os.path.join(base_dir, "templates", "dashboard_row_s1.html"), "r") as f:
-        row_s1_template = f.read()
-    with open(os.path.join(base_dir, "templates", "dashboard_row_s2.html"), "r") as f:
-        row_s2_template = f.read()
-    with open(os.path.join(base_dir, "templates", "dashboard_row_s3.html"), "r") as f:
-        row_s3_template = f.read()
 
     # 3. Calculate summary stats
     total_species = len(merged_rows)
@@ -535,6 +552,7 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
         if r["published_count"] > 0 and r["in_ebird"] == "No"
     ]
     no_ebird_count = len(published_no_ebird)
+    invalid_taxonomy_count = sum(1 for r in merged_rows if r["is_valid_taxonomy"] == "No")
 
     # 4. Render Summary Cards panel
     summary_panel = (summary_template
@@ -542,113 +560,155 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
                      .replace("{{ NEEDS_TAGGING }}", f"{needs_tagging_count:,}")
                      .replace("{{ JSON_UNPUBLISHED }}", f"{json_unpublished:,}")
                      .replace("{{ MISSING_LOCATION }}", f"{total_missing_loc:,}")
-                     .replace("{{ MISSING_EBIRD }}", f"{no_ebird_count:,}"))
+                     .replace("{{ MISSING_EBIRD }}", f"{no_ebird_count:,}")
+                     .replace("{{ INVALID_TAXONOMY }}", f"{invalid_taxonomy_count:,}"))
 
-    # 5. Build Content Sections
-    sections_html = []
+    # Group photos missing location by species
+    photos_missing_by_species = {}
+    for r in photos_missing_location:
+        spec = r[0]
+        if spec not in photos_missing_by_species:
+            photos_missing_by_species[spec] = []
+        photos_missing_by_species[spec].append(r)
 
-    # --- Section 1 ---
-    s1_headers = """
-        <div class="table-header">Species Name</div>
-        <div class="table-header" style="text-align: center;">In JSON</div>
-        <div class="table-header" style="text-align: center;">In eBird</div>
-        <div class="table-header" style="text-align: right;">Label Photos</div>
-        <div class="table-header" style="text-align: right;">Taxonomic Tag</div>
-        <div class="table-header" style="text-align: right;">Published</div>
-        <div class="table-header" style="text-align: right;">Needs Tagging</div>
-        <div class="table-header" style="text-align: right;">Missing Loc</div>
-    """
-    s1_rows = []
-    for r in merged_rows:
+    # 5. Build Unified Master Table Rows
+    rows_html = []
+    for idx, r in enumerate(merged_rows):
+        species_name = r["species_name"]
+        toggle_id = f"details-{idx}"
+        
+        # Determine badges / alerts
+        badges = []
+        if r["is_valid_taxonomy"] == "No":
+            badges.append('<span class="badge error" style="background-color: rgba(255, 63, 63, 0.15); color: #ff3f3f; border: 1px solid rgba(255, 63, 63, 0.3);">Invalid Taxonomy</span>')
+        if r["needs_tagging"] > 0:
+            badges.append(f'<span class="badge warning">Needs Tagging ({r["needs_tagging"]})</span>')
+        if r["missing_loc_count"] > 0:
+            badges.append(f'<span class="badge error">Missing Loc ({r["missing_loc_count"]})</span>')
+        if r["published_count"] > 0 and r["in_ebird"] == "No":
+            badges.append('<span class="badge info">Not in eBird</span>')
+        if r["in_json"] == "Yes" and r["published_count"] == 0:
+            badges.append('<span class="badge muted">Unpublished</span>')
+        if not badges:
+            badges.append('<span class="badge success">Synced & Migrated</span>')
+        badges_html = " ".join(badges)
+
         needs_tagging_class = "warning-text" if r["needs_tagging"] > 0 else ""
         missing_loc_class = "error-text" if r["missing_loc_count"] > 0 else ""
+
+        # Earliest Photo details
+        earliest = earliest_photos.get(species_name, {})
+        earliest_date = earliest.get("date", "N/A")
+        earliest_location = earliest.get("location", "N/A")
+        earliest_gallery = earliest.get("collection", "N/A")
+        earliest_filename = earliest.get("filename", "N/A")
+
+        # Action Details block
+        issues_list = []
+        if r["is_valid_taxonomy"] == "No":
+            issues_list.append(f'<p class="error-text" style="color: #ff3f3f; margin-bottom: 4px;">❌ <strong>Invalid Name:</strong> "{species_name}" is not a valid common name in the eBird v2025 taxonomy. Update this tag/label in Lightroom.</p>')
+            issues_list.append('<p class="info-text" style="color: #888; font-size: 0.85em; margin-top: 0; margin-bottom: 12px; padding-left: 20px;">💡 <em>Hint:</em> If this is a mammal, plant, landscape, or other non-bird subject, assign the keyword tag <strong>"Wildlife"</strong> or <strong>"Landscape"</strong> to it in Lightroom. The dashboard will then automatically exclude it.</p>')
+        if r["needs_tagging"] > 0:
+            issues_list.append(f'<p class="warning-text">⚠️ <strong>Needs Tagging:</strong> {r["needs_tagging"]} photos have this color label but lack the corresponding taxonomy keyword tag.</p>')
+        if r["missing_loc_count"] > 0:
+            issues_list.append(f'<p class="error-text">📍 <strong>Missing Location:</strong> {r["missing_loc_count"]} published photos have no location details.</p>')
+            issues_list.append('<ul class="missing-loc-list">')
+            spec_photos = photos_missing_by_species.get(species_name, [])
+            for pm in spec_photos:
+                cap_date = pm[3][:10] if pm[3] else "N/A"
+                issues_list.append(f'<li><span class="file-cell">{pm[1]}</span> in <strong>{pm[2]}</strong> (Captured {cap_date})</li>')
+            issues_list.append('</ul>')
+        if r["published_count"] > 0 and r["in_ebird"] == "No":
+            issues_list.append('<p class="warning-text">🐦 <strong>eBird Discrepancy:</strong> Published in your SmugMug portfolio but has no matching sighting record in your eBird sightings file (ebird.csv).</p>')
+        if not issues_list:
+            issues_list.append('<p class="success-text">🎉 This species is fully synchronized, labeled, tagged, and matching your eBird logs.</p>')
+        issues_html = "\n".join(issues_list)
+
+        # Main row HTML
+        main_row = f"""
+        <tr class="species-row" onclick="toggleDetails('{toggle_id}')">
+            <td class="toggle-icon-cell"><span class="toggle-icon" id="icon-{toggle_id}">▶</span></td>
+            <td class="species-cell">{species_name}</td>
+            <td class="status-cell">{r["in_json"]}</td>
+            <td class="status-cell">{r["in_ebird"]}</td>
+            <td class="num-cell">{r["total_label"]}</td>
+            <td class="num-cell">{r["total_keyword"]}</td>
+            <td class="num-cell">{r["published_count"]}</td>
+            <td class="num-cell {needs_tagging_class}">{r["needs_tagging"]}</td>
+            <td class="num-cell {missing_loc_class}">{r["missing_loc_count"]}</td>
+            <td class="actions-cell">{badges_html}</td>
+        </tr>
+        """
         
-        row_html = (row_s1_template
-                    .replace("{{ NAME }}", r["species_name"])
-                    .replace("{{ IN_JSON }}", r["in_json"])
-                    .replace("{{ IN_EBIRD }}", r["in_ebird"])
-                    .replace("{{ TOTAL_LABEL }}", str(r["total_label"]))
-                    .replace("{{ TOTAL_KEYWORD }}", str(r["total_keyword"]))
-                    .replace("{{ PUBLISHED }}", str(r["published_count"]))
-                    .replace("{{ NEEDS_TAGGING_CLASS }}", needs_tagging_class)
-                    .replace("{{ NEEDS_TAGGING }}", str(r["needs_tagging"]))
-                    .replace("{{ MISSING_LOCATION_CLASS }}", missing_loc_class)
-                    .replace("{{ MISSING_LOCATION }}", str(r["missing_loc_count"])))
-        s1_rows.append("        " + row_html.strip())
-        
-    s1_html = (section_template
-               .replace("{{ SECTION_TITLE }}", "Section 1: Species Migration & Publishing Status")
-               .replace("{{ SECTION_DESCRIPTION }}", "Global overview of species publishing status, comparing Lightroom, eBird sightings list, and the old website JSON index.")
-               .replace("{{ TABLE_CLASS }}", "grid-s1")
-               .replace("{{ HEADERS }}", s1_headers.strip())
-               .replace("{{ ROWS }}", "\n".join(s1_rows)))
-    sections_html.append(s1_html)
+        # Details drawer row HTML
+        drawer_row = f"""
+        <tr class="details-row" id="{toggle_id}" style="display: none;">
+            <td colspan="10" class="details-container-cell">
+                <div class="details-container">
+                    <div class="details-grid">
+                        <div class="details-card earliest-card">
+                            <h4>📅 Earliest Photo Sighting</h4>
+                            <p><strong>First Photographed:</strong> {earliest_date}</p>
+                            <p><strong>Location:</strong> {earliest_location}</p>
+                            <p><strong>Gallery:</strong> {earliest_gallery}</p>
+                            <p><strong>Filename:</strong> <span class="file-cell">{earliest_filename}</span></p>
+                        </div>
+                        <div class="details-card issues-card">
+                            <h4>⚠️ Active Action Details</h4>
+                            {issues_html}
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+        """
+        rows_html.append(main_row.strip() + "\n" + drawer_row.strip())
 
-    # --- Section 2 ---
-    s2_headers = """
-        <div class="table-header">Species Name</div>
-        <div class="table-header">Filename</div>
-        <div class="table-header">Collection/Gallery</div>
-        <div class="table-header">Capture Date</div>
+    rows_joined = "\n".join(rows_html)
+    master_table = f"""
+    <div class="dashboard-section">
+        <h2 class="section-heading">Species Library Health Index</h2>
+        <p class="section-desc">Unified master checklist of all bird species in your photo library. Click any species row to expand and view its earliest photographed details, taxonomy tagging details, or specific file listings needing location recovery.</p>
+        <table class="dashboard-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Species Name</th>
+                    <th style="text-align: center;">In JSON</th>
+                    <th style="text-align: center;">In eBird</th>
+                    <th style="text-align: right;">Label Photos</th>
+                    <th style="text-align: right;">Taxonomic Tag</th>
+                    <th style="text-align: right;">Published</th>
+                    <th style="text-align: right;">Needs Tagging</th>
+                    <th style="text-align: right;">Missing Loc</th>
+                    <th>Action Items</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows_joined}
+            </tbody>
+        </table>
+    </div>
+    
+    <script>
+    function toggleDetails(rowId) {{
+        var detailsRow = document.getElementById(rowId);
+        var icon = document.getElementById("icon-" + rowId);
+        if (detailsRow.style.display === "none") {{
+            detailsRow.style.display = "table-row";
+            icon.classList.add("expanded");
+        }} else {{
+            detailsRow.style.display = "none";
+            icon.classList.remove("expanded");
+        }}
+    }}
+    </script>
     """
-    s2_rows = []
-    if not photos_missing_location:
-        s2_rows.append('        <div class="table-row"><div class="table-cell" style="grid-column: span 4; text-align: center; color: #888;">No published photos with missing locations found!</div></div>')
-    else:
-        for r in photos_missing_location:
-            cap_date = r[3][:10] if r[3] else "N/A"
-            row_html = (row_s2_template
-                        .replace("{{ NAME }}", r[0])
-                        .replace("{{ FILENAME }}", r[1])
-                        .replace("{{ COLLECTION }}", r[2])
-                        .replace("{{ DATE }}", cap_date))
-            s2_rows.append("        " + row_html.strip())
-            
-    s2_html = (section_template
-               .replace("{{ SECTION_TITLE }}", "Section 2: Published Photos Needing Location Metadata")
-               .replace("{{ SECTION_DESCRIPTION }}", "These published photos have no location information defined in Lightroom (Location, City, State, and Country are all blank).")
-               .replace("{{ TABLE_CLASS }}", "grid-s2")
-               .replace("{{ HEADERS }}", s2_headers.strip())
-               .replace("{{ ROWS }}", "\n".join(s2_rows)))
-    sections_html.append(s2_html)
 
-    # --- Section 3 ---
-    s3_headers = """
-        <div class="table-header">Species Name</div>
-        <div class="table-header" style="text-align: right;">Total Published</div>
-        <div class="table-header">Earliest Photo</div>
-        <div class="table-header">Earliest Date</div>
-        <div class="table-header">Earliest Location</div>
-    """
-    s3_rows = []
-    if not published_no_ebird:
-        s3_rows.append('        <div class="table-row"><div class="table-cell" style="grid-column: span 5; text-align: center; color: #888;">No published species missing eBird sightings found!</div></div>')
-    else:
-        for species_name in sorted(published_no_ebird):
-            pub_count = next((r["published_count"] for r in merged_rows if r["species_name"] == species_name), 0)
-            earliest = earliest_photos.get(species_name, {"filename": "N/A", "date": "N/A", "location": "N/A"})
-            row_html = (row_s3_template
-                        .replace("{{ NAME }}", species_name)
-                        .replace("{{ PUBLISHED }}", str(pub_count))
-                        .replace("{{ FILENAME }}", earliest["filename"])
-                        .replace("{{ DATE }}", earliest["date"])
-                        .replace("{{ LOCATION }}", earliest["location"]))
-            s3_rows.append("        " + row_html.strip())
-            
-    s3_html = (section_template
-               .replace("{{ SECTION_TITLE }}", "Section 3: Published Species with No eBird Sightings")
-               .replace("{{ SECTION_DESCRIPTION }}", "These species are published in your SmugMug portfolio but have no matching sighting record in your eBird sightings file (ebird.csv). This could represent taxonomy differences, typos, or missing eBird logs.")
-               .replace("{{ TABLE_CLASS }}", "grid-s3")
-               .replace("{{ HEADERS }}", s3_headers.strip())
-               .replace("{{ ROWS }}", "\n".join(s3_rows)))
-    sections_html.append(s3_html)
+    content_html = summary_panel + "\n" + master_table
 
-    # 6. Combined content HTML
-    content_html = summary_panel + "\n" + "\n".join(sections_html)
-
-    # 7. CSS rules
+    # 6. Page CSS rules
     styles = """
-        /* Dashboard custom styles */
         .dashboard-summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -662,7 +722,7 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
             border-radius: 6px;
         }
         .summary-card.warning { border-left-color: #ff9f43; }
-        .summary-card.primary { border-left-color: #00fa9a; }
+        .summary-card.primary { border-left-color: #2ed573; }
         .summary-card.error { border-left-color: #ff4d4d; }
         .summary-card.info { border-left-color: #a55eea; }
         .card-title {
@@ -678,7 +738,7 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
             color: #fff;
         }
         .dashboard-section {
-            margin-top: 50px;
+            margin-top: 40px;
             margin-bottom: 50px;
         }
         .section-heading {
@@ -694,24 +754,16 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
             margin-bottom: 20px;
             font-size: 0.95em;
         }
-        .timeline-table {
-            display: grid;
-            gap: 1px;
-            background-color: #222;
+        .dashboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #131313;
             border: 1px solid #222;
             border-radius: 6px;
             overflow: hidden;
+            margin-top: 20px;
         }
-        .timeline-table.grid-s1 {
-            grid-template-columns: 2.2fr 1fr 1fr 1.2fr 1.4fr 1.2fr 1.2fr 1.2fr;
-        }
-        .timeline-table.grid-s2 {
-            grid-template-columns: 1.5fr 1.5fr 1.5fr 1.2fr;
-        }
-        .timeline-table.grid-s3 {
-            grid-template-columns: 1.5fr 1fr 1.5fr 1fr 2fr;
-        }
-        .table-header {
+        .dashboard-table th {
             background-color: #1a1a1a;
             color: #fff;
             font-weight: bold;
@@ -720,23 +772,99 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
             text-transform: uppercase;
             letter-spacing: 0.8px;
             border-bottom: 2px solid #333;
+            text-align: left;
         }
-        .table-row {
-            display: contents;
-        }
-        .table-cell {
-            background-color: #131313;
+        .dashboard-table td {
             padding: 12px 16px;
             font-size: 0.9em;
-            align-self: center;
             border-bottom: 1px solid #1a1a1a;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
-        .table-row:hover .table-cell {
+        .species-row {
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        .species-row:hover {
             background-color: #1d1d1d;
         }
+        .toggle-icon-cell {
+            width: 30px;
+            text-align: center;
+            color: #888;
+            font-size: 0.8em;
+        }
+        .toggle-icon {
+            display: inline-block;
+            transition: transform 0.15s ease;
+        }
+        .toggle-icon.expanded {
+            transform: rotate(90deg);
+        }
+        .details-row {
+            background-color: #0b0b0b;
+        }
+        .details-container-cell {
+            padding: 0 !important;
+            border-bottom: 1px solid #222 !important;
+        }
+        .details-container {
+            padding: 20px 40px;
+            background-color: #0d0d0d;
+            border-top: 1px solid #1a1a1a;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        .details-card {
+            background-color: #151515;
+            border: 1px solid #222;
+            border-radius: 6px;
+            padding: 16px 20px;
+        }
+        .details-card h4 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 6px;
+            color: #fff;
+            font-size: 1em;
+        }
+        .details-card h5 {
+            margin-top: 10px;
+            margin-bottom: 6px;
+            color: #aaa;
+            font-size: 0.9em;
+        }
+        .details-card p {
+            margin: 6px 0;
+            color: #ccc;
+            font-size: 0.9em;
+        }
+        .missing-loc-list {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 0.85em;
+            color: #bbb;
+        }
+        .missing-loc-list li {
+            margin-bottom: 4px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 0.75em;
+            font-weight: bold;
+            border-radius: 4px;
+            margin-right: 4px;
+            text-transform: uppercase;
+        }
+        .badge.warning { background-color: rgba(255, 159, 67, 0.15); color: #ff9f43; border: 1px solid rgba(255, 159, 67, 0.3); }
+        .badge.error { background-color: rgba(255, 77, 77, 0.15); color: #ff4d4d; border: 1px solid rgba(255, 77, 77, 0.3); }
+        .badge.info { background-color: rgba(165, 94, 234, 0.15); color: #a55eea; border: 1px solid rgba(165, 94, 234, 0.3); }
+        .badge.success { background-color: rgba(46, 213, 115, 0.15); color: #2ed573; border: 1px solid rgba(46, 213, 115, 0.3); }
+        .badge.muted { background-color: rgba(136, 136, 136, 0.15); color: #888; border: 1px solid rgba(136, 136, 136, 0.3); }
         .species-cell {
             font-weight: bold;
             color: #eee;
@@ -753,13 +881,14 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
         }
         .warning-text { color: #ff9f43; font-weight: bold; }
         .error-text { color: #ff4d4d; font-weight: bold; }
+        .success-text { color: #2ed573; font-weight: bold; }
         .file-cell { font-family: monospace; color: #a55eea; }
-        .gallery-cell { color: #00fa9a; }
+        .gallery-cell { color: #2ed573; }
         .date-cell { font-family: monospace; color: #aaa; }
         .location-cell { color: #ccc; }
     """
 
-    # 8. Perform substitutions
+    # 7. Perform substitutions
     html = html.replace("{{ PAGE_TITLE }}", "Bird Migration & Publishing Dashboard")
     html = html.replace("{{ HEADER_TITLE }}", "Bird Migration & Publishing Dashboard")
     html = html.replace("{{ STATS_HEADER }}", "")
@@ -773,12 +902,17 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     json_path = os.path.join(script_dir, "photos-ebird-mybird.json")
     ebird_path = os.path.join(script_dir, "ebird.csv")
+    taxonomy_path = os.path.join(script_dir, "taxonomy", "eBird_taxonomy_v2025.csv")
     
     print("Loading species from JSON list...")
     json_species = load_json_species(json_path)
 
     print("Loading species from eBird sightings...")
     ebird_sightings = parse_ebird_sightings(ebird_path)
+
+    print("Loading valid taxonomy names from eBird taxonomy CSV...")
+    valid_taxonomy_names = load_valid_taxonomy_names(taxonomy_path)
+    print(f"Loaded {len(valid_taxonomy_names)} valid taxonomy names.")
 
     print("Connecting to Lightroom Catalog...")
     with open_catalog() as cursor:
@@ -800,7 +934,8 @@ def main():
         json_species, 
         ebird_sightings, 
         missing_location_counts,
-        fully_migrated_species
+        fully_migrated_species,
+        valid_taxonomy_names
     )
 
     print("Saving dashboard report...")
@@ -815,6 +950,7 @@ def main():
     total_needs_tagging_count = sum(1 for r in merged_rows if r["needs_tagging"] > 0)
     total_missing_loc_count = len(photos_missing_location)
     published_no_ebird_count = sum(1 for r in merged_rows if r["published_count"] > 0 and r["in_ebird"] == "No")
+    invalid_taxonomy_count = sum(1 for r in merged_rows if r["is_valid_taxonomy"] == "No")
     
     print(f"✅ Success! Reports saved under the '{REPORTS_DIR}/' subfolder:")
     print(f"   • CSV:  {OUTPUT_CSV}")
@@ -822,6 +958,7 @@ def main():
     print(f"\nTotal species in dashboard: {len(merged_rows)}")
     print(f"Species in JSON list: {len(json_species)}")
     print(f"Species in eBird: {len(ebird_sightings)}")
+    print(f"❌ Invalid taxonomy names in library: {invalid_taxonomy_count}")
     print(f"❌ JSON species NOT yet published to SmugMug: {json_unpublished_count}")
     print(f"⚠️ Species needing Lightroom taxonomy tagging: {total_needs_tagging_count}")
     print(f"📍 Published photos missing location: {total_missing_loc_count}")
