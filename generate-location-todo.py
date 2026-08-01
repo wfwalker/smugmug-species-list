@@ -189,7 +189,7 @@ def save_to_html(output_path, matches, total_audited):
 
     # 4. Build Table Section
     section_title = f"Location Recovery Tasks ({len(matches)} matches)"
-    section_desc = f"Out of {total_audited} published photos audited, eBird sightings from the same capture date were found for {len(matches)} photos. Use the Copy button to quickly capture the hotspot name for copy-pasting into Lightroom."
+    section_desc = f"Out of {total_audited} published photos audited, eBird sightings from the same capture date were found for {len(matches)} photos. Locations are colored by confidence: <span style='color: #2ed573; font-weight: bold;'>Green</span> means a single unique hotspot was logged on that date; <span style='color: #ffd32a; font-weight: bold;'>Yellow</span> means multiple candidate hotspots were logged. Use the Copy button to capture the correct hotspot name to your clipboard."
     
     table_content = (section_template
                      .replace("{{ SECTION_TITLE }}", section_title)
