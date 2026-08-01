@@ -25,7 +25,7 @@ graph TD
 * **`migration-and-publishing-dashboard.py`**
   * *Purpose*: The main dashboard showing species publication status, missing locations, missing taxonomic tags, and global exclusions.
   * *Exclusions*: Automatically ignores tags specified in `EXCLUDED_TAGS` (e.g., `"People"`, `"Wildlife"`).
-  * *Outputs*: Terminal summary report of your library status.
+  * *Outputs*: Terminal summary report and the interactive dashboard [reports/bird_migration_dashboard.html](file:///Users/walker/Dropbox/smugmug-species-list/reports/bird_migration_dashboard.html).
 * **`generate-location-todo.py`**
   * *Purpose*: Generates an interactive checklist of published photos that lack location tags. It cross-references capture dates with your eBird checklist history to auto-suggest eBird hotspots.
   * *Color Coding*: Highlights unique hotspots in green (`#2ed573`) and multiple candidate options in yellow (`#ffd32a`).
