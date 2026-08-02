@@ -49,6 +49,7 @@ RENAME_MAPS = {
     "Hoffman's Woodpecker": "Hoffmann's Woodpecker",
     "Mangrove Warbler": "Mangrove Yellow Warbler",
     "Northern Gallinule": "Common Gallinule",
+    "Band-tailed Gull": "Belcher's Gull",
 }
 
 SPLIT_MAPS = {

@@ -10,7 +10,7 @@ REPORTS_DIR = "reports"
 OUTPUT_CSV = os.path.join(REPORTS_DIR, "bird_migration_dashboard.csv")
 OUTPUT_HTML = os.path.join(REPORTS_DIR, "bird_migration_dashboard.html")
 
-EXCLUDED_TAGS = ["People", "Wildlife", "Ice", "Landscape", "Plant", "Lichen"]
+EXCLUDED_TAGS = ["People", "Wildlife", "Ice", "Landscape", "Plant", "Lichen", "Pet", "Wedding"]
 
 def load_json_species(json_path):
     """Loads unique bird species common names from the photos-ebird-mybird.json file."""
@@ -576,30 +576,7 @@ def generate_report(label_stats, keyword_stats, published_stats, json_species, e
             "missing_loc_count": missing_loc_count
         })
 
-    # Sorting logic:
-    # 1. Obsolete or typo names (not in eBird taxonomy)
-    # 2. Species in JSON but not published to SmugMug first (high priority action item)
-    # 3. Species published to SmugMug but not in eBird (taxonomic name mismatches)
-    # 4. Species with published photos missing location details
-    # 5. Species needing Lightroom tagging (needs_tagging > 0)
-    # 6. Total label photos descending
-    # 7. Species name alphabetical
-    def sort_key(item):
-        is_invalid_tax = 1 if item["is_valid_taxonomy"] == "No" else 0
-        is_json_unpublished = 1 if (item["in_json"] == "Yes" and item["published_count"] == 0) else 0
-        is_published_no_ebird = 1 if (item["published_count"] > 0 and item["in_ebird"] == "No") else 0
-        has_missing_location = 1 if (item["missing_loc_count"] > 0) else 0
-        return (
-            -is_invalid_tax,
-            -is_json_unpublished,
-            -is_published_no_ebird,
-            -has_missing_location,
-            -item["needs_tagging"],
-            -item["total_label"],
-            item["species_name"].lower()
-        )
-
-    merged_rows.sort(key=sort_key)
+    merged_rows.sort(key=lambda x: x["species_name"].lower())
     return merged_rows
 
 def save_to_csv(output_path, merged_rows):
@@ -690,9 +667,13 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
             badges.append('<span class="badge info">Not in eBird</span>')
         if r["in_json"] == "Yes" and r["published_count"] == 0:
             badges.append('<span class="badge muted">Unpublished</span>')
-        if not badges:
+        is_synced = len(badges) == 0
+        if is_synced:
             badges.append('<span class="badge success">Synced & Migrated</span>')
         badges_html = " ".join(badges)
+
+        row_class = "species-row synced-row" if is_synced else "species-row"
+        drawer_class = "details-row synced-row" if is_synced else "details-row"
 
         needs_tagging_class = "warning-text" if r["needs_tagging"] > 0 else ""
         missing_loc_class = "error-text" if r["missing_loc_count"] > 0 else ""
@@ -752,7 +733,7 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
 
         # Main row HTML
         main_row = f"""
-        <tr class="species-row" onclick="toggleDetails('{toggle_id}')">
+        <tr class="{row_class}" onclick="toggleDetails('{toggle_id}')">
             <td class="toggle-icon-cell"><span class="toggle-icon" id="icon-{toggle_id}">▶</span></td>
             <td class="species-cell">{species_name}</td>
             <td class="status-cell">{r["in_json"]}</td>
@@ -768,7 +749,7 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
         
         # Details drawer row HTML
         drawer_row = f"""
-        <tr class="details-row" id="{toggle_id}" style="display: none;">
+        <tr class="{drawer_class}" id="{toggle_id}" style="display: none;">
             <td colspan="10" class="details-container-cell">
                 <div class="details-container">
                     <div class="details-grid">
@@ -793,7 +774,13 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
     rows_joined = "\n".join(rows_html)
     master_table = f"""
     <div class="dashboard-section">
-        <h2 class="section-heading">Species Library Health Index</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222; padding-bottom: 12px; margin-bottom: 18px;">
+            <h2 class="section-heading" style="margin: 0; border: none; padding: 0;">Species Library Health Index</h2>
+            <label style="display: flex; align-items: center; gap: 8px; color: #eee; font-weight: bold; font-size: 0.9em; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="toggle-synced-chk" checked onchange="toggleSyncedRows(this)" style="width: 16px; height: 16px; cursor: pointer; accent-color: #2ed573;">
+                Show Synced & Migrated Species
+            </label>
+        </div>
         <p class="section-desc">Unified master checklist of all bird species in your photo library. Click any species row to expand and view its earliest photographed details, taxonomy tagging details, or specific file listings needing location recovery.</p>
         <table class="dashboard-table">
             <thead>
@@ -827,6 +814,27 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
             detailsRow.style.display = "none";
             icon.classList.remove("expanded");
         }}
+    }}
+
+    function toggleSyncedRows(checkbox) {{
+        var show = checkbox.checked;
+        var rows = document.querySelectorAll('.synced-row');
+        rows.forEach(function(row) {{
+            if (show) {{
+                if (row.classList.contains('details-row')) {{
+                    var icon = document.getElementById("icon-" + row.id);
+                    if (icon && icon.classList.contains('expanded')) {{
+                        row.style.display = "table-row";
+                    }} else {{
+                        row.style.display = "none";
+                    }}
+                }} else {{
+                    row.style.display = "table-row";
+                }}
+            }} else {{
+                row.style.display = "none";
+            }}
+        }});
     }}
     </script>
     """
