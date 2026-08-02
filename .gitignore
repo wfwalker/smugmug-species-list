@@ -1,5 +1,8 @@
 families.json
 root-children.json
+.obsidian
 .DS_Store
 .env
 reports
+scratch
+cron.log

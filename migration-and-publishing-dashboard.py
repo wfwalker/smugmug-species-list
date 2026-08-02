@@ -144,6 +144,41 @@ def build_automatic_resolutions(taxonomy_dir):
                 
     return auto_recs, auto_splits, normalized_v2025
 
+SYNONYMS = {
+    "northern yellow warbler": "yellow warbler",
+    "hudsonian whimbrel": "whimbrel",
+    "american gannet": "northern gannet",
+    "common house-martin": "western house-martin",
+    "gray-breasted wood-wren": "grey-breasted wood-wren",
+    "american barn owl": "barn owl",
+    "northern house wren": "house wren",
+    "western whimbrel": "whimbrel",
+    "white-headed stilt": "pied stilt",
+    "american black oystercatcher": "black oystercatcher",
+}
+
+def load_ebird_locations(csv_path):
+    """Parses eBird CSV file and returns a dictionary of:
+    (common_name_lower, date_str) -> set of locations (hotspots)"""
+    ebird_locs = {}
+    if not os.path.exists(csv_path):
+        return ebird_locs
+    try:
+        with open(csv_path, mode='r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                name = row.get("Common Name")
+                date = row.get("Date")
+                loc = row.get("Location")
+                if name and date and loc:
+                    key = (name.lower().strip(), date.strip())
+                    if key not in ebird_locs:
+                        ebird_locs[key] = set()
+                    ebird_locs[key].add(loc.strip())
+    except Exception as e:
+        print(f"⚠️ Error parsing eBird locations: {e}")
+    return ebird_locs
+
 def parse_ebird_sightings(csv_path):
     """Parses eBird CSV file and returns a set of unique common names seen."""
     if not os.path.exists(csv_path):
@@ -607,7 +642,7 @@ def save_to_csv(output_path, merged_rows):
                 r["missing_loc_count"]
             ])
 
-def save_to_html(output_path, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species, auto_recs, normalized_v2025):
+def save_to_html(output_path, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species, auto_recs, normalized_v2025, ebird_locs):
     """Writes the unified species-centric dashboard report to an HTML file."""
     base_dir = os.path.dirname(__file__)
     
@@ -719,11 +754,39 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
             issues_list.append(f'<p class="warning-text">⚠️ <strong>Needs Tagging:</strong> {r["needs_tagging"]} photos have this color label but lack the corresponding taxonomy keyword tag.</p>')
         if r["missing_loc_count"] > 0:
             issues_list.append(f'<p class="error-text">📍 <strong>Missing Location:</strong> {r["missing_loc_count"]} published photos have no location details.</p>')
-            issues_list.append('<ul class="missing-loc-list">')
+            issues_list.append('<ul class="missing-loc-list" style="list-style-type: none; padding-left: 10px;">')
             spec_photos = photos_missing_by_species.get(species_name, [])
             for pm in spec_photos:
                 cap_date = pm[3][:10] if pm[3] else "N/A"
-                issues_list.append(f'<li><span class="file-cell">{pm[1]}</span> in <strong>{pm[2]}</strong> (Captured {cap_date})</li>')
+                
+                # Check for matching eBird locations
+                matched_hotspots = None
+                if cap_date != "N/A":
+                    name_lower = species_name.lower().strip()
+                    candidates = [name_lower]
+                    if name_lower in SYNONYMS:
+                        candidates.append(SYNONYMS[name_lower])
+                    for cand in candidates:
+                        key = (cand, cap_date)
+                        if key in ebird_locs:
+                            matched_hotspots = sorted(ebird_locs[key])
+                            break
+                            
+                if matched_hotspots:
+                    color_class = "single-hotspot" if len(matched_hotspots) == 1 else "multi-hotspots"
+                    loc_blocks = []
+                    for loc in matched_hotspots:
+                        escaped_loc = loc.replace("'", "\\'")
+                        loc_blocks.append(
+                            f'<span class="hotspot-option" style="display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; padding: 2px 6px; background: #0b0b0b; border: 1px solid #222; border-radius: 4px; font-size: 0.9em;">'
+                            f'➔ Sighting: <strong class="{color_class}">{loc}</strong>'
+                            f'<button class="copy-btn" onclick="copyToClipboard(\'{escaped_loc}\', this)">Copy</button>'
+                            f'</span>'
+                        )
+                    loc_html = " ".join(loc_blocks)
+                    issues_list.append(f'<li style="margin-bottom: 6px;"><span class="file-cell">{pm[1]}</span> in <strong>{pm[2]}</strong> (Captured {cap_date}) {loc_html}</li>')
+                else:
+                    issues_list.append(f'<li style="margin-bottom: 6px;"><span class="file-cell">{pm[1]}</span> in <strong>{pm[2]}</strong> (Captured {cap_date})</li>')
             issues_list.append('</ul>')
         if r["published_count"] > 0 and r["in_ebird"] == "No":
             issues_list.append('<p class="warning-text">🐦 <strong>eBird Discrepancy:</strong> Published in your SmugMug portfolio but has no matching sighting record in your eBird sightings file (ebird.csv).</p>')
@@ -834,6 +897,22 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
             }} else {{
                 row.style.display = "none";
             }}
+        }});
+    }}
+
+    function copyToClipboard(text, btn) {{
+        navigator.clipboard.writeText(text).then(function() {{
+            var oldText = btn.innerText;
+            btn.innerText = "Copied!";
+            btn.style.backgroundColor = "#2ed573";
+            btn.style.borderColor = "#2ed573";
+            setTimeout(function() {{
+                btn.innerText = oldText;
+                btn.style.backgroundColor = "";
+                btn.style.borderColor = "";
+            }}, 1200);
+        }}).catch(function(err) {{
+            console.error("Failed to copy text: ", err);
         }});
     }}
     </script>
@@ -1060,6 +1139,23 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
         .gallery-cell { color: #2ed573; }
         .date-cell { font-family: monospace; color: #aaa; }
         .location-cell { color: #ccc; }
+        .single-hotspot { color: #2ed573; font-weight: bold; }
+        .multi-hotspots { color: #ffd32a; font-weight: bold; }
+        .copy-btn {
+            background-color: #222;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 2px 6px;
+            font-size: 0.8em;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 4px;
+            transition: all 0.15s ease;
+        }
+        .copy-btn:hover {
+            background-color: #333;
+            border-color: #888;
+        }
         .photo-audit-list {
             max-height: 250px;
             overflow-y: auto;
@@ -1095,6 +1191,9 @@ def main():
 
     print("Loading eBird checklists by date for migration audit...")
     ebird_sightings_by_date = load_ebird_sightings_by_date(ebird_path)
+
+    print("Loading eBird checklist locations for recovery dashboard...")
+    ebird_locs = load_ebird_locations(ebird_path)
 
     print("Loading valid taxonomy names from eBird taxonomy CSV...")
     valid_taxonomy_names = load_valid_taxonomy_names(taxonomy_path)
@@ -1187,7 +1286,7 @@ def main():
     os.makedirs(REPORTS_DIR, exist_ok=True)
     
     save_to_csv(OUTPUT_CSV, merged_rows)
-    save_to_html(OUTPUT_HTML, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species, auto_recs, normalized_v2025)
+    save_to_html(OUTPUT_HTML, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species, auto_recs, normalized_v2025, ebird_locs)
 
     # Print summary statistics
     json_unpublished_count = sum(1 for r in merged_rows if r["in_json"] == "Yes" and r["published_count"] == 0)
