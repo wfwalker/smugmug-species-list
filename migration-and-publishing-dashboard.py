@@ -4,6 +4,7 @@ import csv
 import json
 import os
 from lrcat_utils import open_catalog, BIRD_ROOT, format_location
+from audit_taxonomy_migration import audit_migration_tasks, load_ebird_sightings_by_date, RENAME_MAPS_LOWER, LUMP_MAPS_LOWER, SPLIT_MAPS_LOWER
 
 REPORTS_DIR = "reports"
 OUTPUT_CSV = os.path.join(REPORTS_DIR, "bird_migration_dashboard.csv")
@@ -529,7 +530,7 @@ def save_to_csv(output_path, merged_rows):
                 r["missing_loc_count"]
             ])
 
-def save_to_html(output_path, merged_rows, photos_missing_location, earliest_photos):
+def save_to_html(output_path, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species):
     """Writes the unified species-centric dashboard report to an HTML file."""
     base_dir = os.path.dirname(__file__)
     
@@ -606,8 +607,28 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
         # Action Details block
         issues_list = []
         if r["is_valid_taxonomy"] == "No":
-            issues_list.append(f'<p class="error-text" style="color: #ff3f3f; margin-bottom: 4px;">❌ <strong>Invalid Name:</strong> "{species_name}" is not a valid common name in the eBird v2025 taxonomy. Update this tag/label in Lightroom.</p>')
+            name_lower = species_name.lower().strip()
+            action_text = ""
+            if name_lower in RENAME_MAPS_LOWER:
+                action_text = f' Recommended Action: Update to <strong>"{RENAME_MAPS_LOWER[name_lower][1]}"</strong>.'
+            elif name_lower in LUMP_MAPS_LOWER:
+                action_text = f' Recommended Action: Lump into <strong>"{LUMP_MAPS_LOWER[name_lower][1]}"</strong>.'
+            elif name_lower in SPLIT_MAPS_LOWER:
+                candidates_str = ", ".join(f'"{c}"' for c in SPLIT_MAPS_LOWER[name_lower][1])
+                action_text = f' Recommended Action: Split into one of <strong>{candidates_str}</strong>.'
+                
+            issues_list.append(f'<p class="error-text" style="color: #ff3f3f; margin-bottom: 4px;">❌ <strong>Invalid Name:</strong> "{species_name}" is not a valid common name in the eBird v2025 taxonomy. Update this tag/label in Lightroom.{action_text}</p>')
             issues_list.append('<p class="info-text" style="color: #888; font-size: 0.85em; margin-top: 0; margin-bottom: 12px; padding-left: 20px;">💡 <em>Hint:</em> If this is a mammal, plant, landscape, or other non-bird subject, assign the keyword tag <strong>"Wildlife"</strong> or <strong>"Landscape"</strong> to it in Lightroom. The dashboard will then automatically exclude it.</p>')
+            
+            # Append catalog-wide photo-level split recommendations if available
+            split_recs = split_details_by_species.get(species_name)
+            if split_recs:
+                issues_list.append('<h5 style="margin-top: 15px; margin-bottom: 5px; color: #ff9f43;">📅 eBird Sighting Log Match Recommendations (by photo date):</h5>')
+                issues_list.append('<div class="photo-audit-list">')
+                issues_list.append('<ul style="list-style-type: none; padding-left: 0; margin: 0; font-size: 0.85em; line-height: 1.6;">')
+                issues_list.extend(split_recs)
+                issues_list.append('</ul>')
+                issues_list.append('</div>')
         if r["needs_tagging"] > 0:
             issues_list.append(f'<p class="warning-text">⚠️ <strong>Needs Tagging:</strong> {r["needs_tagging"]} photos have this color label but lack the corresponding taxonomy keyword tag.</p>')
         if r["missing_loc_count"] > 0:
@@ -705,7 +726,47 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
     </script>
     """
 
-    content_html = summary_panel + "\n" + master_table
+    migration_section_html = ""
+    if migration_items:
+        migration_rows = []
+        for item in migration_items:
+            migration_rows.append(f"""
+            <tr>
+                <td class="file-cell">{item["filename"]}</td>
+                <td style="font-size: 0.85em; color: #aaa;">{item["lr_path"]}</td>
+                <td><span class="badge warning">{item["source"]}</span></td>
+                <td class="date-cell">{item["date"]}</td>
+                <td class="error-text">{item["old_tag"]}</td>
+                <td><span class="badge info">{item["type"]}</span></td>
+                <td class="success-text" style="color: #ff9f43;">{item["suggested_action_txt"]}</td>
+            </tr>
+            """)
+        
+        migration_rows_joined = "".join(migration_rows)
+        migration_section_html = f"""
+        <div class="dashboard-section" style="border: 1px solid rgba(255, 159, 67, 0.2); border-radius: 6px; padding: 20px; background-color: #17120e; margin-bottom: 40px;">
+            <h2 class="section-heading" style="color: #ff9f43; border-bottom: 2px solid #ff9f43; padding-bottom: 8px; margin-top: 0;">🔄 Active Taxonomic Migrations (Action Required)</h2>
+            <p class="section-desc" style="color: #ddd;">The following {len(migration_items)} photos carry obsolete common names or typos in your Lightroom catalog. Correct them in Lightroom to align with the new taxonomy.</p>
+            <table class="dashboard-table" style="margin-top: 15px; border: 1px solid #332115;">
+                <thead>
+                    <tr style="background-color: #241910;">
+                        <th style="color: #ff9f43;">Photo Filename</th>
+                        <th style="color: #ff9f43;">Lightroom Path</th>
+                        <th style="color: #ff9f43;">Tag Source</th>
+                        <th style="color: #ff9f43;">Capture Date</th>
+                        <th style="color: #ff9f43;">Obsolete Tag</th>
+                        <th style="color: #ff9f43;">Type</th>
+                        <th style="color: #ff9f43;">Recommended Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {migration_rows_joined}
+                </tbody>
+            </table>
+        </div>
+        """
+
+    content_html = summary_panel + "\n" + migration_section_html + "\n" + master_table
 
     # 6. Page CSS rules
     styles = """
@@ -886,6 +947,15 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
         .gallery-cell { color: #2ed573; }
         .date-cell { font-family: monospace; color: #aaa; }
         .location-cell { color: #ccc; }
+        .photo-audit-list {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #222;
+            border-radius: 4px;
+            padding: 10px 14px;
+            background-color: #0b0b0b;
+            margin-top: 8px;
+        }
     """
 
     # 7. Perform substitutions
@@ -910,6 +980,9 @@ def main():
     print("Loading species from eBird sightings...")
     ebird_sightings = parse_ebird_sightings(ebird_path)
 
+    print("Loading eBird checklists by date for migration audit...")
+    ebird_sightings_by_date = load_ebird_sightings_by_date(ebird_path)
+
     print("Loading valid taxonomy names from eBird taxonomy CSV...")
     valid_taxonomy_names = load_valid_taxonomy_names(taxonomy_path)
     print(f"Loaded {len(valid_taxonomy_names)} valid taxonomy names.")
@@ -925,6 +998,51 @@ def main():
             earliest_photos,
             fully_migrated_species
         ) = fetch_db_statistics(cursor)
+        
+        print("Running active taxonomy migration audit...")
+        migration_items = audit_migration_tasks(cursor, ebird_sightings_by_date)
+
+        print("Pre-calculating eBird date-matched split recommendations for catalog...")
+        split_details_by_species = {}
+        for name_lower, (original, candidates) in SPLIT_MAPS_LOWER.items():
+            cursor.execute("""
+                SELECT DISTINCT
+                    f.baseName || '.' || f.extension AS Filename,
+                    i.captureTime AS CaptureTime,
+                    fold.pathFromRoot AS FolderPath
+                FROM Adobe_images i
+                JOIN AgLibraryFile f ON i.rootFile = f.id_local
+                JOIN AgLibraryFolder fold ON f.folder = fold.id_local
+                LEFT JOIN AgLibraryKeywordImage ki ON i.id_local = ki.image
+                LEFT JOIN AgLibraryKeyword k ON ki.tag = k.id_local
+                WHERE LOWER(i.colorLabels) = ? OR LOWER(k.name) = ?
+                ORDER BY i.captureTime;
+            """, (name_lower, name_lower))
+            
+            photos = cursor.fetchall()
+            if not photos:
+                continue
+                
+            photo_recs = []
+            for pr in photos:
+                filename = pr[0]
+                cap_time = pr[1]
+                folder_path = pr[2]
+                capture_date = cap_time[:10] if cap_time else "N/A"
+                
+                logged = ebird_sightings_by_date.get(capture_date, set())
+                matches = logged.intersection(candidates)
+                
+                if len(matches) == 1:
+                    rec = f'<span class="success-text" style="color: #2ed573;">Update to: {list(matches)[0]} (confirmed via eBird log)</span>'
+                elif len(matches) > 1:
+                    rec = f'<span class="warning-text" style="color: #ff9f43;">Choose: {", ".join(sorted(matches))} (multiple logged)</span>'
+                else:
+                    rec = f'<span class="error-text" style="color: #ff4d4d;">Manual Review: {", ".join(candidates)} (none logged)</span>'
+                    
+                photo_recs.append(f'<li><span class="file-cell">{filename}</span> in <strong style="color: #aaa;">{folder_path}</strong> ({capture_date}) ➔ {rec}</li>')
+                
+            split_details_by_species[original] = photo_recs
 
     print("Processing and merging statistics...")
     merged_rows = generate_report(
@@ -943,7 +1061,7 @@ def main():
     os.makedirs(REPORTS_DIR, exist_ok=True)
     
     save_to_csv(OUTPUT_CSV, merged_rows)
-    save_to_html(OUTPUT_HTML, merged_rows, photos_missing_location, earliest_photos)
+    save_to_html(OUTPUT_HTML, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species)
 
     # Print summary statistics
     json_unpublished_count = sum(1 for r in merged_rows if r["in_json"] == "Yes" and r["published_count"] == 0)
@@ -959,6 +1077,7 @@ def main():
     print(f"Species in JSON list: {len(json_species)}")
     print(f"Species in eBird: {len(ebird_sightings)}")
     print(f"❌ Invalid taxonomy names in library: {invalid_taxonomy_count}")
+    print(f"❌ Active taxonomic migrations (rename/split): {len(migration_items)}")
     print(f"❌ JSON species NOT yet published to SmugMug: {json_unpublished_count}")
     print(f"⚠️ Species needing Lightroom taxonomy tagging: {total_needs_tagging_count}")
     print(f"📍 Published photos missing location: {total_missing_loc_count}")

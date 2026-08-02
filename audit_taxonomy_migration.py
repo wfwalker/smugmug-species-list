@@ -43,6 +43,12 @@ RENAME_MAPS = {
     "Tāiko": "Magenta Petrel",
     "Tūī": "Tui",
     "Western Mockingbird": "Northern Mockingbird",
+    "Plumbeous Sierra-finch": "Plumbeous Sierra Finch",
+    "Grey-throated Leaftosser": "Gray-throated Leaftosser",
+    "Greater Sage Grouse": "Greater Sage-Grouse",
+    "Hoffman's Woodpecker": "Hoffmann's Woodpecker",
+    "Mangrove Warbler": "Mangrove Yellow Warbler",
+    "Northern Gallinule": "Common Gallinule",
 }
 
 SPLIT_MAPS = {
@@ -51,6 +57,8 @@ SPLIT_MAPS = {
     "Striated Heron": ["Lava Heron", "Little Heron", "Striated Heron"],
     "Warbling Vireo": ["Eastern Warbling Vireo", "Western Warbling Vireo"],
     "Yellow Warbler": ["Mangrove Yellow Warbler", "Northern Yellow Warbler"],
+    "Rockhopper Penguin": ["Western Rockhopper Penguin", "Eastern Rockhopper Penguin", "Moseley's Rockhopper Penguin"],
+    "Immaculate Antbird": ["Zeledon's Antbird", "Blue-lored Antbird"],
 }
 
 LUMP_MAPS = {
@@ -354,18 +362,11 @@ def save_to_html(output_path, items, total_photos):
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-def main():
-    print("Loading eBird checklists from ebird.csv...")
-    ebird_sightings = load_ebird_sightings_by_date(EBIRD_CSV)
-    print(f"Loaded logs for {len(ebird_sightings)} dates from ebird.csv.")
-
-    print("Connecting to Lightroom Catalog...")
-    with open_catalog() as cursor:
-        rows = fetch_photos_needing_migration(cursor)
-        
-    print(f"Found {len(rows)} photo tags matching affected 2024 species list.")
-
+def audit_migration_tasks(cursor, ebird_sightings):
+    """Audits the Lightroom database and eBird sightings to return photo migration tasks."""
+    rows = fetch_photos_needing_migration(cursor)
     migration_items = []
+    
     for r in rows:
         species_name = r[0]
         filename = r[1]
@@ -435,8 +436,20 @@ def main():
                 "suggested_action_txt": rec_action,
                 "ebird_sightings": list(logged)
             })
+            
+    return migration_items
 
-    print(f"Audited matches completed. Generating reports...")
+def main():
+    print("Loading eBird checklists from ebird.csv...")
+    ebird_sightings = load_ebird_sightings_by_date(EBIRD_CSV)
+    print(f"Loaded logs for {len(ebird_sightings)} dates from ebird.csv.")
+
+    print("Connecting to Lightroom Catalog...")
+    with open_catalog() as cursor:
+        migration_items = audit_migration_tasks(cursor, ebird_sightings)
+        
+    print(f"Found {len(migration_items)} photo tags matching affected 2024 species list.")
+    print("Audited matches completed. Generating reports...")
     os.makedirs(REPORTS_DIR, exist_ok=True)
     save_to_csv(OUTPUT_CSV, migration_items)
     save_to_html(OUTPUT_HTML, migration_items, len(migration_items))
