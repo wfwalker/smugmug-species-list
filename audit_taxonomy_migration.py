@@ -59,6 +59,7 @@ SPLIT_MAPS = {
     "Yellow Warbler": ["Mangrove Yellow Warbler", "Northern Yellow Warbler"],
     "Rockhopper Penguin": ["Western Rockhopper Penguin", "Eastern Rockhopper Penguin", "Moseley's Rockhopper Penguin"],
     "Immaculate Antbird": ["Zeledon's Antbird", "Blue-lored Antbird"],
+    "Common Moorhen": ["Common Gallinule", "Eurasian Moorhen"],
 }
 
 LUMP_MAPS = {
