@@ -44,6 +44,115 @@ def load_valid_taxonomy_names(taxonomy_path):
         print(f"⚠️ Error parsing taxonomy CSV: {e}")
     return valid_names
 
+def normalize_name(name):
+    """Helper to remove hyphens, double spaces, punctuation, convert grey->gray, and lowercase strings for match comparison."""
+    name_clean = name.lower().replace("grey", "gray")
+    return "".join(c for c in name_clean if c.isalnum())
+
+def build_automatic_resolutions(taxonomy_dir, all_invalid_names):
+    """Attempts to automatically resolve invalid names using spelling normalization,
+    scientific name tracking, and species code split/lump detection."""
+    v2025_names = {}
+    v2025_sci_to_names = {}
+    v2025_code_to_names = {}
+    normalized_v2025 = {}
+    
+    # 1. Load v2025 taxonomy
+    v2025_path = os.path.join(taxonomy_dir, "eBird_taxonomy_v2025.csv")
+    if os.path.exists(v2025_path):
+        try:
+            with open(v2025_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    com_name = row.get("PRIMARY_COM_NAME")
+                    sci_name = row.get("SCI_NAME")
+                    code = row.get("SPECIES_CODE")
+                    if com_name and sci_name:
+                        v2025_names[com_name] = row
+                        normalized_v2025[normalize_name(com_name)] = com_name
+                        if sci_name not in v2025_sci_to_names:
+                            v2025_sci_to_names[sci_name] = []
+                        v2025_sci_to_names[sci_name].append(com_name)
+                        if code:
+                            v2025_code_to_names[code] = com_name
+        except Exception as e:
+            print(f"⚠️ Error reading 2025 taxonomy: {e}")
+
+    # 2. Load historical taxonomy data from all other files in directory
+    historical_names = {}
+    if os.path.exists(taxonomy_dir):
+        for filename in sorted(os.listdir(taxonomy_dir), reverse=True):
+            if filename.startswith("eBird_") and filename.endswith(".csv") and "2025" not in filename:
+                path = os.path.join(taxonomy_dir, filename)
+                try:
+                    with open(path, 'r', encoding='utf-8') as f:
+                        reader = csv.DictReader(f)
+                        for row in reader:
+                            com_name = row.get("PRIMARY_COM_NAME")
+                            sci_name = row.get("SCI_NAME")
+                            code = row.get("SPECIES_CODE")
+                            if com_name and com_name not in v2025_names:
+                                historical_names[com_name] = {
+                                    "sci_name": sci_name,
+                                    "species_code": code
+                                }
+                except Exception:
+                    pass
+
+    # 3. Resolve each invalid name
+    auto_recs = {}
+    for name in all_invalid_names:
+        name_clean = name.strip()
+        norm = normalize_name(name_clean)
+        
+        # A. Spelling/Hyphen match
+        if norm in normalized_v2025:
+            target = normalized_v2025[norm]
+            auto_recs[name_clean] = f' Recommended Action: Update to <strong>"{target}"</strong> (automatically matched via spelling check).'
+            continue
+            
+        # B. Historical matches
+        if name_clean in historical_names:
+            hist_info = historical_names[name_clean]
+            sci = hist_info["sci_name"]
+            code = hist_info["species_code"]
+            
+            # Match by scientific name
+            v2025_matches = v2025_sci_to_names.get(sci, [])
+            if len(v2025_matches) == 1:
+                target = v2025_matches[0]
+                auto_recs[name_clean] = f' Recommended Action: Update to <strong>"{target}"</strong> (automatically matched via scientific name <em>{sci}</em>).'
+                continue
+            elif len(v2025_matches) > 1:
+                candidates_str = ", ".join(f'"{c}"' for c in sorted(v2025_matches))
+                auto_recs[name_clean] = f' Recommended Action: Split into one of <strong>{candidates_str}</strong> (taxonomic split of <em>{sci}</em>).'
+                continue
+                
+            # Match by species code prefix / suffix split (e.g. categr -> Western Cattle-Egret / Eastern Cattle-Egret)
+            if code:
+                v2025_split_candidates = []
+                for v2025_name, row in v2025_names.items():
+                    v_code = row.get("SPECIES_CODE", "")
+                    if v_code.startswith(code) and v_code != code and row.get("CATEGORY") == "species":
+                        v2025_split_candidates.append(v2025_name)
+                        
+                if len(v2025_split_candidates) == 1:
+                    target = v2025_split_candidates[0]
+                    auto_recs[name_clean] = f' Recommended Action: Update to <strong>"{target}"</strong> (automatically matched via species code <em>{code}</em>).'
+                    continue
+                elif len(v2025_split_candidates) > 1:
+                    candidates_str = ", ".join(f'"{c}"' for c in sorted(v2025_split_candidates))
+                    auto_recs[name_clean] = f' Recommended Action: Split into one of <strong>{candidates_str}</strong> (taxonomic split of code <em>{code}</em>).'
+                    continue
+                    
+                # Match by exact species code
+                if code in v2025_code_to_names:
+                    target = v2025_code_to_names[code]
+                    auto_recs[name_clean] = f' Recommended Action: Update to <strong>"{target}"</strong> (automatically matched via species code <em>{code}</em>).'
+                    continue
+                
+    return auto_recs
+
 def parse_ebird_sightings(csv_path):
     """Parses eBird CSV file and returns a set of unique common names seen."""
     if not os.path.exists(csv_path):
@@ -443,7 +552,7 @@ def fetch_db_statistics(cursor):
 
 def generate_report(label_stats, keyword_stats, published_stats, json_species, ebird_sightings, missing_location_counts, fully_migrated_species, valid_taxonomy_names):
     """Merges all sources into a unified list of species dicts, sorted in priority order."""
-    all_species = set(label_stats.keys()).union(json_species).union(published_stats.keys())
+    all_species = set(label_stats.keys()).union(published_stats.keys()).union(keyword_stats.keys())
     
     # Omit fully migrated species from the main table in Section 1
     all_species = all_species - fully_migrated_species
@@ -530,7 +639,7 @@ def save_to_csv(output_path, merged_rows):
                 r["missing_loc_count"]
             ])
 
-def save_to_html(output_path, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species):
+def save_to_html(output_path, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species, auto_recs):
     """Writes the unified species-centric dashboard report to an HTML file."""
     base_dir = os.path.dirname(__file__)
     
@@ -616,6 +725,8 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
             elif name_lower in SPLIT_MAPS_LOWER:
                 candidates_str = ", ".join(f'"{c}"' for c in SPLIT_MAPS_LOWER[name_lower][1])
                 action_text = f' Recommended Action: Split into one of <strong>{candidates_str}</strong>.'
+            elif species_name in auto_recs:
+                action_text = auto_recs[species_name]
                 
             issues_list.append(f'<p class="error-text" style="color: #ff3f3f; margin-bottom: 4px;">❌ <strong>Invalid Name:</strong> "{species_name}" is not a valid common name in the eBird v2025 taxonomy. Update this tag/label in Lightroom.{action_text}</p>')
             issues_list.append('<p class="info-text" style="color: #888; font-size: 0.85em; margin-top: 0; margin-bottom: 12px; padding-left: 20px;">💡 <em>Hint:</em> If this is a mammal, plant, landscape, or other non-bird subject, assign the keyword tag <strong>"Wildlife"</strong> or <strong>"Landscape"</strong> to it in Lightroom. The dashboard will then automatically exclude it.</p>')
@@ -1056,12 +1167,18 @@ def main():
         valid_taxonomy_names
     )
 
+    print("Building automatic resolutions for invalid taxonomy names...")
+    taxonomy_dir = os.path.join(script_dir, "taxonomy")
+    all_invalid_names = {r["species_name"] for r in merged_rows if r["is_valid_taxonomy"] == "No"}
+    auto_recs = build_automatic_resolutions(taxonomy_dir, all_invalid_names)
+    print(f"Successfully resolved {len(auto_recs)} invalid names automatically.")
+
     print("Saving dashboard report...")
     # Create reports directory if it doesn't exist
     os.makedirs(REPORTS_DIR, exist_ok=True)
     
     save_to_csv(OUTPUT_CSV, merged_rows)
-    save_to_html(OUTPUT_HTML, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species)
+    save_to_html(OUTPUT_HTML, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species, auto_recs)
 
     # Print summary statistics
     json_unpublished_count = sum(1 for r in merged_rows if r["in_json"] == "Yes" and r["published_count"] == 0)
