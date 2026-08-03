@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Default values
-DEFAULT_SOURCE="/Volumes/Batholith/Photos/2024"
-DEFAULT_DEST="/Volumes/Photos/2024"
+DEFAULT_SOURCE="/Volumes/Batholith/Photos/2025"
+DEFAULT_DEST="/Volumes/Photos/2025"
 DEFAULT_INTERVAL=10
 DEFAULT_METHOD="df" # df is default because it is light on the network mount
 
