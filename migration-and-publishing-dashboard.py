@@ -63,7 +63,8 @@ def main():
             missing_location_counts, 
             photos_missing_location, 
             earliest_photos,
-            fully_migrated_species
+            fully_migrated_species,
+            needs_tagging_examples
         ) = fetch_db_statistics(cursor, EXCLUDED_TAGS)
         
         print("Running active taxonomy migration audit...")
@@ -143,7 +144,8 @@ def main():
         split_details_by_species, 
         auto_recs, 
         normalized_v2025, 
-        ebird_locs
+        ebird_locs,
+        needs_tagging_examples
     )
 
     # Print summary statistics

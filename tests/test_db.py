@@ -104,6 +104,11 @@ class TestDB(unittest.TestCase):
         # 6. Insert metadata (missing location)
         self.cursor.execute("INSERT INTO AgHarvestedIptcMetadata VALUES (1, NULL, NULL, NULL, NULL)")
         
+        # 7. Insert an untagged image (needs tagging)
+        self.cursor.execute("INSERT INTO AgLibraryFile VALUES (31, 'D86A7391', 'CR3', 20)")
+        self.cursor.execute("INSERT INTO Adobe_images VALUES (2, 'Anhinga', 31, '2026-05-12T10:35:00')")
+        self.cursor.execute("INSERT INTO AgHarvestedIptcMetadata VALUES (2, NULL, NULL, NULL, NULL)")
+
         self.conn.commit()
 
         # Run stats fetch
@@ -115,7 +120,8 @@ class TestDB(unittest.TestCase):
             missing_location_counts, 
             photos_missing_location, 
             earliest_photos,
-            fully_migrated_species
+            fully_migrated_species,
+            needs_tagging_examples
         ) = fetch_db_statistics(self.cursor, excluded_tags)
 
         # Assertions
@@ -138,6 +144,12 @@ class TestDB(unittest.TestCase):
         self.assertEqual(photos_missing_location[0][1], "D86A7390.CR3")
 
         self.assertIn("House Wren", earliest_photos)
+        self.assertEqual(earliest_photos["House Wren"]["date"], "2026-05-12")
+
+        # Test needs_tagging_examples for Anhinga
+        self.assertIn("Anhinga", needs_tagging_examples)
+        self.assertEqual(needs_tagging_examples["Anhinga"][0][0], "D86A7391.CR3")
+        self.assertEqual(needs_tagging_examples["Anhinga"][0][1], "2026/05/")
         self.assertEqual(earliest_photos["House Wren"]["date"], "2026-05-12")
 
 if __name__ == "__main__":

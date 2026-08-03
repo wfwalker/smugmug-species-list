@@ -291,6 +291,29 @@ def fetch_db_statistics(cursor, excluded_tags):
       {exclude_clause};
     """
 
+    # Query H: Fetch example filenames of photos with a color label missing the taxonomy keyword
+    query_needs_tagging_examples = """
+    SELECT DISTINCT
+        i.colorLabels AS SpeciesName,
+        f.baseName || '.' || f.extension AS Filename,
+        fold.pathFromRoot AS FolderPath,
+        rf.absolutePath AS RootPath
+    FROM Adobe_images i
+    JOIN AgLibraryFile f ON i.rootFile = f.id_local
+    JOIN AgLibraryFolder fold ON f.folder = fold.id_local
+    JOIN AgLibraryRootFolder rf ON fold.rootFolder = rf.id_local
+    LEFT JOIN AgLibraryKeyword k 
+        ON i.colorLabels = k.name 
+        AND k.genealogy LIKE ?
+    LEFT JOIN AgLibraryKeywordImage ki 
+        ON i.id_local = ki.image AND k.id_local = ki.tag
+    WHERE i.colorLabels != '' 
+      AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple')
+      AND ki.image IS NULL
+      {exclude_clause}
+    ORDER BY SpeciesName, Filename;
+    """
+
     # Bulk replacement of placeholders
     query_label = query_label.replace("{exclude_clause}", exclude_clause)
     query_keyword = query_keyword.replace("{exclude_clause}", exclude_clause)
@@ -299,6 +322,7 @@ def fetch_db_statistics(cursor, excluded_tags):
     query_photos_missing_location = query_photos_missing_location.replace("{exclude_clause}", exclude_clause)
     query_earliest_photos = query_earliest_photos.replace("{exclude_clause}", exclude_clause)
     query_fully_migrated = query_fully_migrated.replace("{exclude_clause}", exclude_clause)
+    query_needs_tagging_examples = query_needs_tagging_examples.replace("{exclude_clause}", exclude_clause)
 
     # Fetch label data
     cursor.execute(query_label, (BIRD_ROOT,))
@@ -347,6 +371,15 @@ def fetch_db_statistics(cursor, excluded_tags):
     cursor.execute(query_fully_migrated, (BIRD_ROOT,))
     fully_migrated_species = {row[0] for row in cursor.fetchall()}
 
+    # Fetch needs tagging examples
+    cursor.execute(query_needs_tagging_examples, (BIRD_ROOT,))
+    needs_tagging_examples = {}
+    for row in cursor.fetchall():
+        spec = row[0]
+        if spec not in needs_tagging_examples:
+            needs_tagging_examples[spec] = []
+        needs_tagging_examples[spec].append((row[1], row[2], row[3]))
+
     return (
         label_stats, 
         keyword_stats, 
@@ -354,5 +387,6 @@ def fetch_db_statistics(cursor, excluded_tags):
         missing_location_counts, 
         photos_missing_location, 
         earliest_photos,
-        fully_migrated_species
+        fully_migrated_species,
+        needs_tagging_examples
     )

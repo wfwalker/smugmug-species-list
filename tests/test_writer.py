@@ -15,7 +15,7 @@ class TestWriter(unittest.TestCase):
                 "total_label": 5,
                 "total_keyword": 5,
                 "published_count": 3,
-                "needs_tagging": 0,
+                "needs_tagging": 1,
                 "missing_loc_count": 0
             }
         ]
@@ -29,6 +29,14 @@ class TestWriter(unittest.TestCase):
         ebird_locs = {}
         
         with tempfile.TemporaryDirectory() as temp_dir:
+            ex_folder = "2026/05/"
+            ex_file = "D86A7391.CR3"
+            full_folder_path = os.path.join(temp_dir, ex_folder)
+            os.makedirs(full_folder_path, exist_ok=True)
+            with open(os.path.join(full_folder_path, ex_file), "w") as f:
+                f.write("mock")
+                
+            needs_tagging_examples = {"House Wren": [(ex_file, ex_folder, temp_dir)]}
             output_html_path = os.path.join(temp_dir, "test_dashboard.html")
             
             # Executes the HTML generation using the actual project templates
@@ -41,7 +49,8 @@ class TestWriter(unittest.TestCase):
                 split_details_by_species,
                 auto_recs,
                 normalized_v2025,
-                ebird_locs
+                ebird_locs,
+                needs_tagging_examples
             )
             
             self.assertTrue(os.path.exists(output_html_path))
@@ -56,6 +65,10 @@ class TestWriter(unittest.TestCase):
             # 2. The value is replaced with "1" inside the card-val
             self.assertIn('<div class="card-title">Missing eBird</div>', html_content)
             self.assertIn('<div class="card-val">1</div>', html_content)
+            
+            # 3. The needs-tagging example photo filename and folder are rendered
+            self.assertIn("D86A7391.CR3", html_content)
+            self.assertIn("2026/05/", html_content)
 
 if __name__ == "__main__":
     unittest.main()

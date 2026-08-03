@@ -31,7 +31,7 @@ def save_to_csv(output_path, merged_rows):
                 r["missing_loc_count"]
             ])
 
-def save_to_html(output_path, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species, auto_recs, normalized_v2025, ebird_locs):
+def save_to_html(output_path, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species, auto_recs, normalized_v2025, ebird_locs, needs_tagging_examples):
     """Writes the unified species-centric dashboard report to an HTML file."""
     base_dir = os.path.dirname(__file__)
     
@@ -142,7 +142,21 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
                 issues_list.append('</ul>')
                 issues_list.append('</div>')
         if r["needs_tagging"] > 0:
-            issues_list.append(f'<p class="warning-text">⚠️ <strong>Needs Tagging:</strong> {r["needs_tagging"]} photos have this color label but lack the corresponding taxonomy keyword tag.</p>')
+            examples = needs_tagging_examples.get(species_name, [])
+            example_str = ""
+            if examples:
+                valid_example = None
+                for ex_file, ex_folder, ex_root in examples:
+                    # check both the raw path and join it properly
+                    full_path = os.path.join(ex_root, ex_folder, ex_file)
+                    if os.path.exists(full_path):
+                        valid_example = (ex_file, ex_folder)
+                        break
+                if not valid_example:
+                    valid_example = (examples[0][0], examples[0][1])
+                ex_file, ex_folder = valid_example
+                example_str = f' (e.g., <span class="file-cell">{ex_file}</span> in <strong>{ex_folder}</strong>)'
+            issues_list.append(f'<p class="warning-text">⚠️ <strong>Needs Tagging:</strong> {r["needs_tagging"]} photos have this color label but lack the corresponding taxonomy keyword tag{example_str}.</p>')
         if r["missing_loc_count"] > 0:
             issues_list.append(f'<p class="error-text">📍 <strong>Missing Location:</strong> {r["missing_loc_count"]} published photos have no location details.</p>')
             issues_list.append('<ul class="missing-loc-list" style="list-style-type: none; padding-left: 10px;">')
