@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmugMug & Lightroom Bird Reports Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-card: rgba(18, 26, 43, 0.75);
+            --bg-card-hover: rgba(28, 40, 65, 0.9);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(77, 184, 255, 0.35);
+            --text-primary: #f0f4fc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #38bdf8;
+            --accent-green: #34d399;
+            --accent-amber: #fbbf24;
+            --accent-purple: #a78bfa;
+            --accent-rose: #fb7185;
+            --card-radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(167, 139, 250, 0.1) 0px, transparent 50%),
+                radial-gradient(at 50% 100%, rgba(52, 211, 153, 0.08) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 48px 24px 80px;
+            width: 100%;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-green);
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.75rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+        /* Section Headings */
+        .section-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 40px 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--border-color) 0%, transparent 100%);
+        }
+
+        .section-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        /* Grid & Cards */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--card-radius);
+            padding: 28px;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: transparent;
+            transition: background 0.25s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            background: var(--bg-card-hover);
+            border-color: var(--border-glow);
+            box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.5), 0 0 24px 0 rgba(56, 189, 248, 0.15);
+        }
+
+        .card-blue:hover::before { background: var(--accent-blue); }
+        .card-green:hover::before { background: var(--accent-green); }
+        .card-purple:hover::before { background: var(--accent-purple); }
+        .card-amber:hover::before { background: var(--accent-amber); }
+        .card-rose:hover::before { background: var(--accent-rose); }
+
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .card-icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+        }
+
+        .icon-blue { background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); }
+        .icon-green { background: rgba(52, 211, 153, 0.15); color: var(--accent-green); }
+        .icon-purple { background: rgba(167, 139, 250, 0.15); color: var(--accent-purple); }
+        .icon-amber { background: rgba(251, 191, 36, 0.15); color: var(--accent-amber); }
+        .icon-rose { background: rgba(251, 113, 133, 0.15); color: var(--accent-rose); }
+
+        .card-tag {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .tag-html { background: rgba(255, 255, 255, 0.08); color: #cbd5e1; }
+        .tag-live { background: rgba(52, 211, 153, 0.15); color: var(--accent-green); border: 1px solid rgba(52, 211, 153, 0.3); }
+
+        .card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-arrow {
+            transition: transform 0.2s ease;
+            color: var(--accent-blue);
+        }
+
+        .card:hover .card-arrow {
+            transform: translateX(4px);
+        }
+
+        .card-desc {
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 14px;
+            margin-top: auto;
+        }
+
+        .file-path {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-blue);
+            font-size: 0.8rem;
+        }
+
+        /* CLI Box */
+        .cli-box {
+            margin-top: 48px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: var(--card-radius);
+            padding: 24px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .cli-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cli-command {
+            background: #020617;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.88rem;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            overflow-x: auto;
+        }
+
+        footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 32px 24px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        footer a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.1rem; }
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="badge-pill">
+                <span class="badge-dot"></span> Local Bird Photography Hub
+            </div>
+            <h1>SmugMug & Lightroom Reports</h1>
+            <p class="subtitle">Quick navigation portal for your photographic life lists, species growth timelines, migration audits, and publishing dashboards.</p>
+        </header>
+
+        <!-- Section 1: Life Lists -->
+        <div class="section-title">
+            <span class="section-icon icon-blue">📋</span> Photo Life Lists
+        </div>
+        <div class="grid">
+            <!-- Alphabetical Life List -->
+            <a href="html/alphabetical_life_list.html" class="card card-blue">
+                <div>
+                    <div class="card-icon-box icon-blue">🔤</div>
+                    <div class="card-header">
+                        <div class="card-title">Alphabetical Life List <span class="card-arrow">→</span></div>
+                        <span class="card-tag tag-live">Active</span>
+                    </div>
+                    <p class="card-desc">All published photographic bird species arranged alphabetically by English common name, with individual photo counts and SmugMug search links.</p>
+                </div>
+                <div class="card-footer">
+                    <span>Source: Lightroom Catalog</span>
+                    <span class="file-path">html/alphabetical_life_list.html</span>
+                </div>
+            </a>
+
+            <!-- Taxonomic Life List -->
+            <a href="html/taxonomic_life_list.html" class="card card-green">
+                <div>
+                    <div class="card-icon-box icon-green">🌿</div>
+                    <div class="card-header">
+                        <div class="card-title">Taxonomic Life List <span class="card-arrow">→</span></div>
+                        <span class="card-tag tag-live">Active</span>
+                    </div>
+                    <p class="card-desc">Species organized systematically by Clements/eBird taxonomic family order, with direct links to your dedicated SmugMug bird family galleries.</p>
+                </div>
+                <div class="card-footer">
+                    <span>Source: eBird Family Tree</span>
+                    <span class="file-path">html/taxonomic_life_list.html</span>
+                </div>
+            </a>
+
+            <!-- Chronological Life List -->
+            <a href="html/chronological_life_list.html" class="card card-purple">
+                <div>
+                    <div class="card-icon-box icon-purple">📅</div>
+                    <div class="card-header">
+                        <div class="card-title">Chronological Life List <span class="card-arrow">→</span></div>
+                        <span class="card-tag tag-live">Active</span>
+                    </div>
+                    <p class="card-desc">Species presented chronologically by the earliest date photographed or logged in eBird, complete with thumbnail previews and location metadata.</p>
+                </div>
+                <div class="card-footer">
+                    <span>Source: eBird & Lightroom</span>
+                    <span class="file-path">html/chronological_life_list.html</span>
+                </div>
+            </a>
+        </div>
+
+        <!-- Section 2: Visualizations & Milestones -->
+        <div class="section-title">
+            <span class="section-icon icon-amber">📈</span> Growth & Visualizations
+        </div>
+        <div class="grid">
+            <!-- Photo Life List Growth -->
+            <a href="html/photo_lifelist_growth.html" class="card card-amber" style="grid-column: 1 / -1;">
+                <div>
+                    <div class="card-icon-box icon-amber">📊</div>
+                    <div class="card-header">
+                        <div class="card-title">Photographic Species Life List Growth <span class="card-arrow">→</span></div>
+                        <span class="card-tag tag-live">Interactive Dashboard</span>
+                    </div>
+                    <p class="card-desc">Interactive month-by-month timeline and cumulative growth curve since your first bird photo. Includes milestone tracker (#100, #250, #500, #750, #900), big months breakdown, annual acquisition charts, and searchable timeline.</p>
+                </div>
+                <div class="card-footer">
+                    <span>Includes Interactive Chart.js & SVG Export</span>
+                    <span class="file-path">html/photo_lifelist_growth.html</span>
+                </div>
+            </a>
+        </div>
+
+        <!-- Section 3: Audits & Taxonomy Management -->
+        <div class="section-title">
+            <span class="section-icon icon-rose">🔍</span> Migration & Taxonomy Audits
+        </div>
+        <div class="grid">
+            <!-- Unified Migration & Publishing Dashboard -->
+            <a href="reports/bird_migration_dashboard.html" class="card card-rose">
+                <div>
+                    <div class="card-icon-box icon-rose">🦅</div>
+                    <div class="card-header">
+                        <div class="card-title">Migration & Publishing Dashboard <span class="card-arrow">→</span></div>
+                        <span class="card-tag tag-live">Master Audit</span>
+                    </div>
+                    <p class="card-desc">Comprehensive status report comparing Lightroom color labels, taxonomy keywords, SmugMug published photos, eBird checklist dates, missing location GPS data, and active v2025 taxonomy updates.</p>
+                </div>
+                <div class="card-footer">
+                    <span>Output: HTML & CSV</span>
+                    <span class="file-path">reports/bird_migration_dashboard.html</span>
+                </div>
+            </a>
+
+            <!-- Taxonomy Migration Audit -->
+            <a href="reports/taxonomy_migration_audit.html" class="card card-purple">
+                <div>
+                    <div class="card-icon-box icon-purple">🧬</div>
+                    <div class="card-header">
+                        <div class="card-title">Taxonomy Migration Audit <span class="card-arrow">→</span></div>
+                        <span class="card-tag tag-html">Audit Report</span>
+                    </div>
+                    <p class="card-desc">Detailed checklist and image audit for all renamed, split, and lumped species between Clements v2024 and v2025, offering date-matched automated split resolutions.</p>
+                </div>
+                <div class="card-footer">
+                    <span>Output: HTML & CSV</span>
+                    <span class="file-path">reports/taxonomy_migration_audit.html</span>
+                </div>
+            </a>
+        </div>
+
+        <!-- Section 4: CLI Quick Reference -->
+        <div class="cli-box">
+            <div class="cli-title">
+                ⚡ Quick Update Command:
+            </div>
+            <div class="cli-command">
+                <code>./update_reports.py</code>
+                <span style="color: var(--text-muted); font-size: 0.8rem;">Updates all 5 life lists and reports in ~12s</span>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>SmugMug Species List & Lightroom Workflow &bull; Generated for local offline & browser use</p>
+    </footer>
+
+</body>
+</html>
