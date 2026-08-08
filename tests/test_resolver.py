@@ -9,6 +9,8 @@ class TestResolver(unittest.TestCase):
         self.assertEqual(normalize_name("Grey-headed Albatross"), "grayheadedalbatross")
         self.assertEqual(normalize_name("Western Cattle-Egret"), "westerncattleegret")
         self.assertEqual(normalize_name("House Wren"), "housewren")
+        self.assertEqual(normalize_name("Large Cactus Finch"), "largecactusfinch")
+        self.assertEqual(normalize_name("Large Cactus-Finch"), "largecactusfinch")
         self.assertEqual(normalize_name(""), "")
 
     def test_build_automatic_resolutions(self):
@@ -34,6 +36,12 @@ class TestResolver(unittest.TestCase):
                     "PRIMARY_COM_NAME": "Common Gallinule",
                     "SCI_NAME": "Gallinula galeata",
                     "SPECIES_CODE": "comgal",
+                    "CATEGORY": "species"
+                })
+                writer.writerow({
+                    "PRIMARY_COM_NAME": "Large Cactus-Finch",
+                    "SCI_NAME": "Geospiza conirostris",
+                    "SPECIES_CODE": "lacfin",
                     "CATEGORY": "species"
                 })
 
@@ -62,6 +70,8 @@ class TestResolver(unittest.TestCase):
             self.assertEqual(auto_splits["Cattle Egret"], ["Eastern Cattle-Egret", "Western Cattle-Egret"])
             self.assertIn("westerncattleegret", normalized_v2025)
             self.assertEqual(normalized_v2025["westerncattleegret"], "Western Cattle-Egret")
+            self.assertIn("largecactusfinch", normalized_v2025)
+            self.assertEqual(normalized_v2025["largecactusfinch"], "Large Cactus-Finch")
             
 if __name__ == "__main__":
     unittest.main()

@@ -11,7 +11,7 @@ class TestWriter(unittest.TestCase):
                 "species_name": "House Wren",
                 "in_json": "Yes",
                 "in_ebird": "No", # published count > 0, in_ebird = No -> Missing eBird count should be 1
-                "is_valid_taxonomy": "Yes",
+                "is_valid_taxonomy": "No", # Set to No to trigger invalid name block rendering
                 "total_label": 5,
                 "total_keyword": 5,
                 "published_count": 3,
@@ -69,6 +69,10 @@ class TestWriter(unittest.TestCase):
             # 3. The needs-tagging example photo filename and folder are rendered
             self.assertIn("D86A7391.CR3", html_content)
             self.assertIn("2026/05/", html_content)
+            
+            # 4. The Research button is rendered with the correct clipboard prompt
+            self.assertIn("🔍 Research", html_content)
+            self.assertIn("What is the taxonomic history and current name for &quot;House Wren&quot;", html_content)
 
 if __name__ == "__main__":
     unittest.main()
