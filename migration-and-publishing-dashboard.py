@@ -26,7 +26,7 @@ REPORTS_DIR = "reports"
 OUTPUT_CSV = os.path.join(REPORTS_DIR, "bird_migration_dashboard.csv")
 OUTPUT_HTML = os.path.join(REPORTS_DIR, "bird_migration_dashboard.html")
 
-EXCLUDED_TAGS = ["People", "Wildlife", "Ice", "Landscape", "Plant", "Lichen", "Pet", "Wedding"]
+EXCLUDED_TAGS = ["People", "Wildlife", "Ice", "Landscape", "Plant", "Lichen", "Pet", "Zoo", "Wedding"]
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
