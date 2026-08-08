@@ -3,6 +3,7 @@ root-children.json
 .obsidian
 .DS_Store
 .env
+.agents
 reports
 scratch
 cron.log
