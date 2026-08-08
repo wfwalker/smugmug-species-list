@@ -420,6 +420,10 @@ def main():
     for title, out_path in generated_outputs:
         rel_path = os.path.relpath(out_path, base_dir)
         print(f"  • {title:30s} ➔ [{rel_path}](file://{os.path.abspath(out_path)})")
+    
+    index_path = os.path.join(base_dir, "index.html")
+    if os.path.exists(index_path):
+        print(f"\n🌐 Local Hub Portal: [index.html](file://{os.path.abspath(index_path)})")
     print("="*70 + "\n")
 
 if __name__ == "__main__":
