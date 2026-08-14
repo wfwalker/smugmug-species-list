@@ -173,14 +173,19 @@ def generate_html_content(chronological_data, total_seen_count):
                     species_link = f"/search/?q={url_name}"
                     
                 photo_link = make_relative_url(photo["url"])
+                # Only show eBird date/location if it differs from the photo date
+                if ebird_date != photo["date"]:
+                    sighting_info = f"Seen {ebird_date} @ {ebird_loc}"
+                else:
+                    sighting_info = '<span style="color: #444;">—</span>'
+                    
                 row_item = (row_photo_template
-                            .replace("{{ DATE }}", ebird_date)
                             .replace("{{ SPECIES_LINK }}", species_link)
                             .replace("{{ SPECIES_NAME }}", species_name)
-                            .replace("{{ SIGHTING_LOCATION }}", ebird_loc)
                             .replace("{{ PHOTO_LINK }}", photo_link)
                             .replace("{{ PHOTO_DATE }}", photo["date"])
-                            .replace("{{ PHOTO_LOCATION }}", photo["location"]))
+                            .replace("{{ PHOTO_LOCATION }}", photo["location"])
+                            .replace("{{ SIGHTING_INFO }}", sighting_info))
             else:
                 row_item = (row_text_template
                             .replace("{{ DATE }}", ebird_date)
@@ -281,7 +286,18 @@ def generate_html_content(chronological_data, total_seen_count):
     html = html.replace("{{ HEADER_TITLE }}", "Bill's Chronological Photo Life List")
     html = html.replace("{{ STATS_HEADER }}", f"Total eBird species: <strong>{total_seen_count}</strong> | Photographed & Published: <strong>{total_photographed}</strong>")
     html = html.replace("{{ PAGE_SPECIFIC_STYLES }}", styles)
-    html = html.replace("{{ CONTENT }}", content)
+    
+    # Prepend SVG chart to content if it exists
+    svg_path = os.path.join(base_dir, "html", "photo_growth_chart.svg")
+    svg_html = ""
+    if os.path.exists(svg_path):
+        print("Inserting growth chart SVG at the top of the chronological list...")
+        with open(svg_path, "r", encoding="utf-8") as svg_f:
+            svg_html = f'<div class="chart-container" style="max-width: 960px; margin: 30px 0 50px 0;">{svg_f.read()}</div>\n'
+    else:
+        print("⚠️ Warning: photo_growth_chart.svg not found, list will be generated without the chart.")
+        
+    html = html.replace("{{ CONTENT }}", svg_html + content)
     
     return html
 
@@ -325,9 +341,10 @@ def main():
             # If we are only showing photographed species, and this has no photo, skip it
             continue
             
-        # Parse year for grouping
+        # Parse year for grouping (based on photo date if available, else ebird date)
+        sort_date = photo_info["date"] if photo_info else date_str
         try:
-            year = date_str.split("-")[0]
+            year = sort_date.split("-")[0]
         except Exception:
             year = "Unknown"
             
@@ -364,9 +381,12 @@ def main():
     print(f"Matched {len(matched_photo_species)} published species with eBird.")
     print(f"Added {unmatched_count} Lightroom-only published species using their capture date.")
         
-    # Sort sightings within each year chronologically descending (latest seen first)
+    # Sort sightings within each year by photo date descending (latest photographed first)
     for year in chronological_data:
-        chronological_data[year].sort(key=lambda x: (x["ebird_date"], x["name"]), reverse=True)
+        chronological_data[year].sort(
+            key=lambda x: (x["photo"]["date"] if x["photo"] else x["ebird_date"], x["name"]),
+            reverse=True
+        )
         
     # 4. Generate HTML content
     print("Generating HTML content...")

@@ -354,7 +354,14 @@ def run_growth_chart(cursor, base_dir):
     with open(output_html, "w", encoding="utf-8") as f:
         f.write(html_content)
         
+    # Also write static SVG chart
+    svg_content = growth_mod.build_svg(summary, timeline)
+    output_svg = os.path.join(os.path.dirname(output_html), "photo_growth_chart.svg")
+    with open(output_svg, "w", encoding="utf-8") as f:
+        f.write(svg_content)
+        
     print(f"✅ Growth chart dashboard generated: {output_html} ({summary['total_species']} species)")
+    print(f"✅ Static SVG chart generated: {output_svg}")
     return output_html
 
 def main():
@@ -396,6 +403,10 @@ def main():
             out = run_migration_dashboard(cursor, base_dir)
             generated_outputs.append(("Migration Dashboard", out))
             
+        if do_growth:
+            out = run_growth_chart(cursor, base_dir)
+            generated_outputs.append(("Photo Growth Chart", out))
+            
         if do_alpha:
             out = run_alphabetical_lifelist(cursor, base_dir)
             generated_outputs.append(("Alphabetical Life List", out))
@@ -407,10 +418,6 @@ def main():
         if do_chrono:
             out = run_chronological_lifelist(cursor, base_dir, show_all=args.all_ebird)
             generated_outputs.append(("Chronological Life List", out))
-            
-        if do_growth:
-            out = run_growth_chart(cursor, base_dir)
-            generated_outputs.append(("Photo Growth Chart", out))
             
     elapsed = time.time() - start_time
     

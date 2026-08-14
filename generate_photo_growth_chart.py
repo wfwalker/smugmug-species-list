@@ -721,17 +721,101 @@ def build_html(summary, timeline):
 """
     return html
 
+def build_svg(summary, timeline):
+    max_species = summary["total_species"]
+    max_y = ((max_species + 199) // 200) * 200
+    
+    # Grid lines (horizontal)
+    grid_lines = []
+    for val in range(0, max_y + 1, 200):
+        y_pos = 420 - val * (380 / max_y)
+        grid_lines.append(f'  <line x1="60" y1="{y_pos:.1f}" x2="920" y2="{y_pos:.1f}" stroke="#262b38" stroke-dasharray="3,3" />')
+        grid_lines.append(f'  <text x="50" y="{y_pos+4:.1f}" fill="#8e99ac" font-size="12" text-anchor="end" font-family="sans-serif">{val}</text>')
+        
+    # Year labels (vertical)
+    year_markers = []
+    seen_years = set()
+    for i, entry in enumerate(timeline):
+        y = entry["year"]
+        if y % 2 == 0 and y not in seen_years:
+            seen_years.add(y)
+            x_pos = 60 + i * (860 / (len(timeline) - 1))
+            year_markers.append(f'  <line x1="{x_pos:.1f}" y1="40" x2="{x_pos:.1f}" y2="420" stroke="#222736" />')
+            year_markers.append(f'  <text x="{x_pos:.1f}" y="440" fill="#8e99ac" font-size="11" text-anchor="middle" font-family="sans-serif">{y}</text>')
+
+    # Path points
+    points = []
+    for i, entry in enumerate(timeline):
+        x = 60 + i * (860 / (len(timeline) - 1))
+        y = 420 - entry["cumulative"] * (380 / max_y)
+        points.append(f"{x:.1f} {y:.1f}")
+        
+    path_d = "M " + " L ".join(points)
+    area_d = f"{path_d} L 920.0 420 L 60.0 420 Z"
+    
+    # Milestones
+    milestone_dots = []
+    month_to_idx = {entry["month"]: idx for idx, entry in enumerate(timeline)}
+    highlight_milestones = list(range(100, max_species + 1, 100))
+    for m in summary["milestones"]:
+        if m["milestone"] in highlight_milestones:
+            idx = month_to_idx.get(m["month"])
+            if idx is not None:
+                x = 60 + idx * (860 / (len(timeline) - 1))
+                y = 420 - m["milestone"] * (380 / max_y)
+                milestone_dots.append(f'  <circle cx="{x:.1f}" cy="{y:.1f}" r="4.5" fill="#ff9f43" stroke="#0f1117" stroke-width="1.5" />')
+                milestone_dots.append(f'  <text x="{x-8:.1f}" y="{y-10:.1f}" fill="#feca57" font-size="10" font-weight="bold" font-family="sans-serif" text-anchor="end">{m["milestone"]}</text>')
+
+    grid_lines_str = "\n".join(grid_lines)
+    year_markers_str = "\n".join(year_markers)
+    milestone_dots_str = "\n".join(milestone_dots)
+
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 480" width="100%" height="100%" style="background-color: #0f1117; border-radius: 12px;">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff9f43" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#ff9f43" stop-opacity="0.0" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Title -->
+  <text x="60" y="25" fill="#ffffff" font-size="16" font-weight="bold" font-family="sans-serif">Photographic Species Life List Growth ({timeline[0]["year"]} - {timeline[-1]["year"]})</text>
+  <text x="920" y="25" fill="#ff9f43" font-size="14" font-weight="bold" text-anchor="end" font-family="sans-serif">Total: {max_species} Species</text>
+
+  <!-- Grids -->
+{grid_lines_str}
+{year_markers_str}
+
+  <!-- Area & Line -->
+  <path d="{area_d}" fill="url(#grad)" />
+  <path d="{path_d}" fill="none" stroke="#ff9f43" stroke-width="3" stroke-linecap="round" />
+
+  <!-- Milestone dots -->
+{milestone_dots_str}
+</svg>
+"""
+    return svg
+
 def main():
     os.makedirs(os.path.dirname(OUTPUT_HTML), exist_ok=True)
     species_list = fetch_data()
     summary, timeline = process_timeline(species_list)
+    
+    # Write interactive HTML dashboard
     html_content = build_html(summary, timeline)
-
     with open(OUTPUT_HTML, "w", encoding="utf-8") as f:
         f.write(html_content)
+        
+    # Write static SVG chart
+    svg_content = build_svg(summary, timeline)
+    output_svg = os.path.join(os.path.dirname(OUTPUT_HTML), "photo_growth_chart.svg")
+    with open(output_svg, "w", encoding="utf-8") as f:
+        f.write(svg_content)
 
     print(f"\n✅ Interactive growth chart HTML generated successfully at:")
     print(f"   [html/photo_lifelist_growth.html](file://{os.path.abspath(OUTPUT_HTML)})")
+    print(f"✅ Static SVG chart generated successfully at:")
+    print(f"   [html/photo_growth_chart.svg](file://{os.path.abspath(output_svg)})")
 
 if __name__ == "__main__":
     main()
