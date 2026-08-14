@@ -6,7 +6,7 @@ and generates unified HTML and CSV reports.
 """
 
 import os
-from lrcat_utils import open_catalog
+from lrcat_utils import open_catalog, BIRD_ROOT
 from audit_taxonomy_migration import audit_migration_tasks, SPLIT_MAPS_LOWER
 
 # Import modular components
@@ -26,7 +26,7 @@ REPORTS_DIR = "reports"
 OUTPUT_CSV = os.path.join(REPORTS_DIR, "bird_migration_dashboard.csv")
 OUTPUT_HTML = os.path.join(REPORTS_DIR, "bird_migration_dashboard.html")
 
-EXCLUDED_TAGS = ["People", "Wildlife", "Ice", "Landscape", "Plant", "Lichen", "Pet", "Zoo", "Wedding"]
+EXCLUDED_TAGS = ["People", "Wildlife", "Ice", "Landscape", "Plant", "Lichen", "Pet", "Zoo", "Wedding", "Garden"]
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -119,6 +119,49 @@ def main():
                 
             split_details_by_species[original] = photo_recs
 
+        print("Querying photo capture dates to augment research prompts...")
+        excluded_tags_sql = ", ".join(f"'{tag}'" for tag in EXCLUDED_TAGS)
+        exclude_clause = f"""
+          AND i.id_local NOT IN (
+              SELECT ki_ex.image 
+              FROM AgLibraryKeywordImage ki_ex
+              JOIN AgLibraryKeyword k_ex ON ki_ex.tag = k_ex.id_local
+              WHERE k_ex.name IN ({excluded_tags_sql})
+          )
+        """
+        cursor.execute(f"""
+            SELECT SpeciesName, CaptureTime
+            FROM (
+                SELECT 
+                    k.name AS SpeciesName,
+                    i.captureTime AS CaptureTime
+                FROM AgLibraryKeyword k
+                JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
+                JOIN Adobe_images i ON ki.image = i.id_local
+                WHERE k.genealogy LIKE ?
+                  {exclude_clause}
+                
+                UNION ALL
+                
+                SELECT 
+                    i.colorLabels AS SpeciesName,
+                    i.captureTime AS CaptureTime
+                FROM Adobe_images i
+                WHERE i.colorLabels != '' 
+                  AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple')
+                  {exclude_clause}
+            )
+        """, (BIRD_ROOT,))
+        
+        photo_dates_by_species = {}
+        for spec, cap_time in cursor.fetchall():
+            if not spec or not cap_time:
+                continue
+            date_str = cap_time[:10]
+            if spec not in photo_dates_by_species:
+                photo_dates_by_species[spec] = set()
+            photo_dates_by_species[spec].add(date_str)
+
     print("Processing and merging statistics...")
     merged_rows = generate_report(
         label_stats, 
@@ -145,7 +188,8 @@ def main():
         auto_recs, 
         normalized_v2025, 
         ebird_locs,
-        needs_tagging_examples
+        needs_tagging_examples,
+        photo_dates_by_species=photo_dates_by_species
     )
 
     # Print summary statistics

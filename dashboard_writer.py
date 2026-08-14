@@ -31,7 +31,7 @@ def save_to_csv(output_path, merged_rows):
                 r["missing_loc_count"]
             ])
 
-def save_to_html(output_path, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species, auto_recs, normalized_v2025, ebird_locs, needs_tagging_examples):
+def save_to_html(output_path, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species, auto_recs, normalized_v2025, ebird_locs, needs_tagging_examples, photo_dates_by_species=None):
     """Writes the unified species-centric dashboard report to an HTML file."""
     base_dir = os.path.dirname(__file__)
     
@@ -130,7 +130,30 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
                 action_text = auto_recs[species_name]
                 
             # Interactive Research button: copies a research prompt to clipboard
-            research_prompt = f"What is the taxonomic history and current name for &quot;{species_name}&quot; in the eBird v2025/Clements taxonomy? Was it split, lumped, or renamed?"
+            dates = photo_dates_by_species.get(species_name) if photo_dates_by_species else None
+            date_clause = ""
+            if dates:
+                if len(dates) == 1:
+                    date_clause = f" I photographed it on {list(dates)[0]}."
+                else:
+                    # Check if they all share the same year and month (YYYY-MM)
+                    months = {d[:7] for d in dates}
+                    if len(months) == 1:
+                        import calendar
+                        year_month = list(months)[0]
+                        yr, mn = year_month.split("-")
+                        try:
+                            month_name = calendar.month_name[int(mn)].lower()
+                            date_clause = f" I photographed it in {month_name} of {yr}."
+                        except Exception:
+                            date_clause = f" I photographed it in {year_month}."
+                    else:
+                        # Check if they all share the same year (YYYY)
+                        years = {d[:4] for d in dates}
+                        if len(years) == 1:
+                            date_clause = f" I photographed it in {list(years)[0]}."
+                            
+            research_prompt = f"What is the taxonomic history and current name for &quot;{species_name}&quot; in the eBird v2025/Clements taxonomy? Was it split, lumped, or renamed?{date_clause}"
             research_btn = f"""<button class="copy-btn" onclick="navigator.clipboard.writeText('{research_prompt}'); const btn = this; const orig = btn.innerHTML; btn.innerHTML = 'Copied!'; btn.style.borderColor = '#2ed573'; btn.style.color = '#2ed573'; setTimeout(function() {{ btn.innerHTML = orig; btn.style.borderColor = '#555'; btn.style.color = '#fff'; }}, 2000)" style="margin-left: 8px; vertical-align: middle;">🔍 Research</button>"""
 
             issues_list.append(f'<p class="error-text" style="color: #ff3f3f; margin-bottom: 4px;">❌ <strong>Invalid Name:</strong> "{species_name}" is not a valid common name in the eBird v2025 taxonomy. Update this tag/label in Lightroom.{action_text}{research_btn}</p>')

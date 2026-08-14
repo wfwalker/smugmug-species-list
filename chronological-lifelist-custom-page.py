@@ -289,17 +289,7 @@ def generate_html_content(chronological_data, total_seen_count):
     html = html.replace("{{ STATS_HEADER }}", f"Total eBird species: <strong>{total_seen_count}</strong> | Photographed & Published: <strong>{total_photographed}</strong>")
     html = html.replace("{{ PAGE_SPECIFIC_STYLES }}", styles)
     
-    # Prepend SVG chart to content if it exists
-    svg_path = os.path.join(base_dir, "html", "photo_growth_chart.svg")
-    svg_html = ""
-    if os.path.exists(svg_path):
-        print("Inserting growth chart SVG at the top of the chronological list...")
-        with open(svg_path, "r", encoding="utf-8") as svg_f:
-            svg_html = f'<div class="chart-container" style="max-width: 960px; margin: 30px 0 50px 0;">{svg_f.read()}</div>\n'
-    else:
-        print("⚠️ Warning: photo_growth_chart.svg not found, list will be generated without the chart.")
-        
-    html = html.replace("{{ CONTENT }}", svg_html + content)
+    html = html.replace("{{ CONTENT }}", content)
     
     return html
 

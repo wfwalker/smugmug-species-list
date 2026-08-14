@@ -62,7 +62,7 @@ def run_migration_dashboard(cursor, base_dir):
     valid_taxonomy_names = load_valid_taxonomy_names(taxonomy_path)
     auto_recs, auto_splits, normalized_v2025 = build_automatic_resolutions(taxonomy_dir)
     
-    excluded_tags = ["People", "Wildlife", "Ice", "Landscape", "Plant", "Lichen", "Pet", "Zoo", "Wedding"]
+    excluded_tags = ["People", "Wildlife", "Ice", "Landscape", "Plant", "Lichen", "Pet", "Zoo", "Wedding", "Garden"]
     (
         label_stats, 
         keyword_stats, 
@@ -123,6 +123,49 @@ def run_migration_dashboard(cursor, base_dir):
             
         split_details_by_species[original] = photo_recs
         
+    print("Querying photo capture dates to augment research prompts...")
+    excluded_tags_sql = ", ".join(f"'{tag}'" for tag in excluded_tags)
+    exclude_clause = f"""
+      AND i.id_local NOT IN (
+          SELECT ki_ex.image 
+          FROM AgLibraryKeywordImage ki_ex
+          JOIN AgLibraryKeyword k_ex ON ki_ex.tag = k_ex.id_local
+          WHERE k_ex.name IN ({excluded_tags_sql})
+      )
+    """
+    cursor.execute(f"""
+        SELECT SpeciesName, CaptureTime
+        FROM (
+            SELECT 
+                k.name AS SpeciesName,
+                i.captureTime AS CaptureTime
+            FROM AgLibraryKeyword k
+            JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
+            JOIN Adobe_images i ON ki.image = i.id_local
+            WHERE k.genealogy LIKE ?
+              {exclude_clause}
+            
+            UNION ALL
+            
+            SELECT 
+                i.colorLabels AS SpeciesName,
+                i.captureTime AS CaptureTime
+            FROM Adobe_images i
+            WHERE i.colorLabels != '' 
+              AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple')
+              {exclude_clause}
+        )
+    """, (BIRD_ROOT,))
+    
+    photo_dates_by_species = {}
+    for spec, cap_time in cursor.fetchall():
+        if not spec or not cap_time:
+            continue
+        date_str = cap_time[:10]
+        if spec not in photo_dates_by_species:
+            photo_dates_by_species[spec] = set()
+        photo_dates_by_species[spec].add(date_str)
+
     merged_rows = generate_report(
         label_stats, 
         keyword_stats, 
@@ -146,7 +189,8 @@ def run_migration_dashboard(cursor, base_dir):
         auto_recs, 
         normalized_v2025, 
         ebird_locs,
-        needs_tagging_examples
+        needs_tagging_examples,
+        photo_dates_by_species=photo_dates_by_species
     )
     
     print(f"✅ Dashboard generated: {output_html}")
@@ -279,8 +323,10 @@ def run_chronological_lifelist(cursor, base_dir, show_all=False):
         elif not show_all:
             continue
             
+        # Parse year for grouping (based on photo date if available, else ebird date)
+        sort_date = photo_info["date"] if photo_info else date_str
         try:
-            year = date_str.split("-")[0]
+            year = sort_date.split("-")[0]
         except Exception:
             year = "Unknown"
             
@@ -311,8 +357,12 @@ def run_chronological_lifelist(cursor, base_dir, show_all=False):
                 "photo": photo_info
             })
             
+    # Sort sightings within each year by photo date descending (latest photographed first)
     for year in chronological_data:
-        chronological_data[year].sort(key=lambda x: (x["ebird_date"], x["name"]), reverse=True)
+        chronological_data[year].sort(
+            key=lambda x: (x["photo"]["date"] if x["photo"] else x["ebird_date"], x["name"]),
+            reverse=True
+        )
         
     total_seen_count = len(ebird_sightings) + unmatched_count
     html_content = chrono_mod.generate_html_content(chronological_data, total_seen_count)
