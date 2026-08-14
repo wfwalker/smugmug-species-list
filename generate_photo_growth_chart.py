@@ -11,7 +11,7 @@ import importlib.util
 from datetime import datetime
 from collections import defaultdict
 
-from lrcat_utils import open_catalog
+from lrcat_utils import open_catalog, make_relative_url
 
 OUTPUT_HTML = "html/photo_lifelist_growth.html"
 
@@ -66,7 +66,9 @@ def process_timeline(species_list):
 
     cumulative = 0
     timeline = []
-    milestone_targets = [1, 50, 100, 200, 250, 300, 400, 500, 600, 700, 750, 800, 900, len(species_list)]
+    # Ensure targets include every multiple of 100 up to the list length
+    milestone_targets = [1] + list(range(100, len(species_list) + 1, 100)) + [len(species_list)]
+    milestone_targets = sorted(list(set(milestone_targets)))
     milestones_achieved = {}
 
     for m in all_months:
@@ -91,6 +93,35 @@ def process_timeline(species_list):
                     }
                     month_milestones.append(milestones_achieved[mt])
 
+        # Determine trips and locations for new_sp in this month
+        trip_counts = defaultdict(int)
+        location_counts = defaultdict(int)
+        
+        for sp in new_sp:
+            url = sp.get("url", "")
+            rel_url = make_relative_url(url)
+            if rel_url.startswith("/Trips/"):
+                parts = rel_url.split("/")
+                if len(parts) >= 3:
+                    trip_name = parts[2]
+                    # Prettify trip name, e.g. "Costa-Rica-2012" -> "Costa Rica 2012"
+                    trip_name_pretty = trip_name.replace("-", " ")
+                    trip_counts[trip_name_pretty] += 1
+            
+            loc = sp.get("location", "")
+            if loc and loc != "Unknown Location" and "Lightroom Capture" not in loc and "Auto selected" not in loc:
+                location_counts[loc] += 1
+                
+        # Sort and select top trip(s)
+        sorted_trips = sorted(trip_counts.items(), key=lambda x: x[1], reverse=True)
+        top_trips = [t[0] for t in sorted_trips if t[1] >= 2]
+        if not top_trips and sorted_trips:
+            top_trips = [sorted_trips[0][0]]
+            
+        # Sort and select top location(s)
+        sorted_locs = sorted(location_counts.items(), key=lambda x: x[1], reverse=True)
+        top_locations = [l[0] for l in sorted_locs[:2]]
+
         # Pretty month label: e.g. "Feb 2012"
         dt_obj = datetime.strptime(m, "%Y-%m")
         label = dt_obj.strftime("%b %Y")
@@ -102,7 +133,9 @@ def process_timeline(species_list):
             "new_count": len(new_sp),
             "cumulative": cumulative,
             "species_names": [s["name"] for s in new_sp],
-            "milestones": month_milestones
+            "milestones": month_milestones,
+            "trips": top_trips,
+            "locations": top_locations
         })
 
     return {
@@ -637,24 +670,34 @@ def build_html(summary, timeline):
 
         function populateDetails() {{
             // Top Surges
-            const sortedSurges = [...rawTimeline].sort((a, b) => b.new_count - a.new_count).slice(0, 6);
+            const topSurges = [...rawTimeline].sort((a, b) => b.new_count - a.new_count).slice(0, 10);
+            const sortedSurges = topSurges.sort((a, b) => b.month.localeCompare(a.month));
             const surgeContainer = document.getElementById('surge-list-container');
-            surgeContainer.innerHTML = sortedSurges.map((s, idx) => `
-                <li class="surge-item">
-                    <div class="item-main">
-                        <span class="item-title">${{s.label}}</span>
-                        <span class="item-sub">${{s.species_names.slice(0, 3).join(', ')}}${{s.species_names.length > 3 ? '...' : ''}}</span>
-                    </div>
-                    <div class="item-right">
-                        <span class="badge badge-orange">+${{s.new_count}} species</span>
-                        <div class="item-sub" style="margin-top: 2px;">Total: ${{s.cumulative}}</div>
-                    </div>
-                </li>
-            `).join('');
+            surgeContainer.innerHTML = sortedSurges.map((s, idx) => {{
+                let tripHtml = '';
+                if (s.trips && s.trips.length > 0) {{
+                    tripHtml = `<span class="item-sub" style="color: var(--accent-blue); font-weight: 500; margin-top: 3.5px;">✈️ ${{s.trips.join(', ')}}</span>`;
+                }} else if (s.locations && s.locations.length > 0) {{
+                    tripHtml = `<span class="item-sub" style="color: var(--accent-green); margin-top: 3.5px;">📍 ${{s.locations.slice(0, 1).join(', ')}}</span>`;
+                }}
+                return `
+                    <li class="surge-item">
+                        <div class="item-main">
+                            <span class="item-title">${{s.label}}</span>
+                            <span class="item-sub">${{s.species_names.slice(0, 3).join(', ')}}${{s.species_names.length > 3 ? '...' : ''}}</span>
+                            ${{tripHtml}}
+                        </div>
+                        <div class="item-right">
+                            <span class="badge badge-orange">+${{s.new_count}} species</span>
+                            <div class="item-sub" style="margin-top: 2px;">Total: ${{s.cumulative}}</div>
+                        </div>
+                    </li>
+                `;
+            }}).join('');
 
             // Milestones
             const milestoneContainer = document.getElementById('milestone-list-container');
-            const keyMilestones = summaryData.milestones.filter(m => [1, 100, 250, 500, 750, summaryData.total_species].includes(m.milestone));
+            const keyMilestones = summaryData.milestones.filter(m => m.milestone % 100 === 0);
             milestoneContainer.innerHTML = keyMilestones.map(m => `
                 <li class="milestone-item">
                     <div class="item-main">
