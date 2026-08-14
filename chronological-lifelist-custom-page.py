@@ -245,9 +245,10 @@ def generate_html_content(chronological_data, total_seen_count):
             background-color: #131313;
             padding: 14px 18px;
             font-size: 0.95em;
-            align-self: center;
             border-bottom: 1px solid #1a1a1a;
             line-height: 1.4;
+            display: flex;
+            align-items: center;
         }
         .table-row:hover .table-cell {
             background-color: #1d1d1d;
@@ -257,6 +258,7 @@ def generate_html_content(chronological_data, total_seen_count):
             font-size: 1.05em;
             color: #ff9f43; /* Warm orange to emphasize dates */
             font-weight: bold;
+            white-space: nowrap;
         }
         .species-cell {
             font-weight: 500;
