@@ -113,7 +113,11 @@ def run_migration_dashboard(cursor, base_dir):
             matches = logged.intersection(candidates)
             
             if len(matches) == 1:
-                rec = f'<span class="success-text" style="color: #2ed573;">Update to: {list(matches)[0]} (confirmed via eBird log)</span>'
+                match_name = list(matches)[0]
+                if match_name.lower() == original.lower():
+                    rec = f'<span class="success-text" style="color: #2ed573;">Already correct: {match_name} (confirmed via eBird log)</span>'
+                else:
+                    rec = f'<span class="success-text" style="color: #2ed573;">Update to: {match_name} (confirmed via eBird log)</span>'
             elif len(matches) > 1:
                 rec = f'<span class="warning-text" style="color: #ff9f43;">Choose: {", ".join(sorted(matches))} (multiple logged)</span>'
             else:
@@ -152,7 +156,7 @@ def run_migration_dashboard(cursor, base_dir):
                 i.captureTime AS CaptureTime
             FROM Adobe_images i
             WHERE i.colorLabels != '' 
-              AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple')
+              AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple', {excluded_tags_sql})
               {exclude_clause}
         )
     """, (BIRD_ROOT,))
