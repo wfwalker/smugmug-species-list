@@ -34,7 +34,7 @@ def run_migration_dashboard_pipeline(cursor, base_dir):
     valid_taxonomy_names = load_valid_taxonomy_names(taxonomy_path)
     auto_recs, auto_splits, normalized_v2025 = build_automatic_resolutions(taxonomy_dir)
     
-    excluded_tags = ["People", "Wildlife", "Ice", "Landscape", "Plant", "Lichen", "Pet", "Zoo", "Wedding", "Garden"]
+    excluded_tags = ["Art", "People", "Wildlife", "Ice", "Landscape", "Plant", "Lichen", "Pet", "Zoo", "Wedding", "Garden"]
     (
         label_stats, 
         keyword_stats, 
