@@ -1,4 +1,8 @@
 #!/opt/homebrew/bin/python3
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 # parse the eBird_taxonomy.csv file with this format:
 

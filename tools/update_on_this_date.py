@@ -1,4 +1,8 @@
 #!/usr/bin/python3
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 import sys
 import os
@@ -8,7 +12,7 @@ import urllib.parse
 import urllib.request
 
 # Import from our central Lightroom utilities
-from lrcat_utils import open_catalog
+from lib.lrcat_utils import open_catalog
 import hmac
 import hashlib
 import base64

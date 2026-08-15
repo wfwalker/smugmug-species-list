@@ -1,8 +1,11 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unittest
 import os
 import tempfile
 import csv
-from dashboard_resolver import normalize_name, build_automatic_resolutions
+from lib.dashboard_resolver import normalize_name, build_automatic_resolutions
 
 class TestResolver(unittest.TestCase):
     def test_normalize_name(self):

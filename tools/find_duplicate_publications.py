@@ -1,10 +1,14 @@
 #!/usr/bin/python3
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 import sqlite3
 import shutil
 import os
 import sys
-from lrcat_utils import open_catalog
+from lib.lrcat_utils import open_catalog
 
 def main():
     print("=" * 80)

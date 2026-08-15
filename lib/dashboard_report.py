@@ -16,10 +16,19 @@ def generate_report(label_stats, keyword_stats, published_stats, json_species, e
         in_ebird = "Yes" if species_name in ebird_sightings else "No"
         
         # Get count stats
-        total_label = label_stats.get(species_name, {}).get("total_label", 0)
-        total_keyword = keyword_stats.get(species_name, 0)
+        # Note: in fetch_db_statistics, the dictionary keys for label_stats are:
+        # "Total_With_This_Label", "Total_With_Keyword", "Needs_Tagging"
+        # and for keyword_stats are "Total_With_Keyword"
+        total_label = label_stats.get(species_name, {}).get("Total_With_This_Label", 0)
+        
+        kw_stat = keyword_stats.get(species_name, {})
+        if isinstance(kw_stat, dict):
+            total_keyword = kw_stat.get("Total_With_Keyword", 0)
+        else:
+            total_keyword = kw_stat
+            
         published_count = published_stats.get(species_name, 0)
-        needs_tagging = label_stats.get(species_name, {}).get("needs_tagging", 0)
+        needs_tagging = label_stats.get(species_name, {}).get("Needs_Tagging", 0)
         missing_loc_count = missing_location_counts.get(species_name, 0)
         
         # Exclude placeholder rows: we only want rows for species that actually have photos in the Lightroom catalog.

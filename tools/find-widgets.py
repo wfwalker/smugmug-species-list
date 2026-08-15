@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import sqlite3
 import shutil
 import os
@@ -19,4 +23,3 @@ with urllib.request.urlopen(smugmug_req) as response:
     data = json.loads(response.read().decode())
 
 print(data);
-

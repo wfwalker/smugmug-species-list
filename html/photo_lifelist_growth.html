@@ -9,30 +9,22 @@
     <style>
         :root {
             --bg-color: #0f1117;
-            --card-bg: #181b24;
-            --card-border: #262b38;
-            --text-main: #f0f3f8;
+            --card-bg: #161a25;
+            --text-color: #e2e8f0;
             --text-muted: #8e99ac;
-            --accent-orange: #ff9f43;
-            --accent-amber: #feca57;
-            --accent-blue: #48dbfb;
-            --accent-green: #1dd1a1;
-            --accent-purple: #9b59b6;
-            --chart-grid: #222736;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+            --primary: #ff9f43;
+            --primary-glow: rgba(255, 159, 67, 0.15);
+            --border-color: #262b38;
+            --accent: #feca57;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
-            color: var(--text-main);
-            line-height: 1.6;
-            padding: 40px 24px;
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 30px;
+            min-height: 100vh;
         }
 
         .container {
@@ -41,528 +33,529 @@
         }
 
         header {
-            margin-bottom: 35px;
-            border-bottom: 1px solid var(--card-border);
-            padding-bottom: 25px;
-        }
-
-        h1 {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 8px;
-            letter-spacing: -0.5px;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 12px;
-        }
-
-        .subtitle {
-            color: var(--text-muted);
-            font-size: 1.05rem;
-        }
-
-        /* Stat Cards */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 18px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 20px;
             margin-bottom: 30px;
         }
 
-        .stat-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        h1 {
+            margin: 0;
+            font-size: 2.2em;
+            background: linear-gradient(135deg, #fff 0%, #a5b1c2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: var(--accent-orange);
+        .total-badge {
+            background: var(--primary-glow);
+            color: var(--primary);
+            border: 1px solid rgba(255, 159, 67, 0.3);
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 1.2em;
+            font-weight: bold;
         }
 
-        .stat-card.blue::before { background: var(--accent-blue); }
-        .stat-card.green::before { background: var(--accent-green); }
-        .stat-card.purple::before { background: var(--accent-purple); }
-
-        .stat-label {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #fff;
-            line-height: 1.2;
-        }
-
-        .stat-desc {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-top: 6px;
-        }
-
-        /* Chart Section */
-        .chart-section {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 14px;
-            padding: 24px;
-            margin-bottom: 35px;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.3);
-        }
-
-        .chart-header {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            gap: 15px;
-        }
-
-        .chart-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #fff;
-        }
-
-        .chart-controls {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            background: #252a38;
-            color: var(--text-muted);
-            border: 1px solid var(--card-border);
-            padding: 7px 14px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .btn:hover {
-            background: #2d3345;
-            color: #fff;
-        }
-
-        .btn.active {
-            background: var(--accent-orange);
-            color: #0f1117;
-            border-color: var(--accent-orange);
-            font-weight: 600;
-        }
-
-        .chart-wrapper {
-            position: relative;
-            height: 480px;
-            width: 100%;
-        }
-
-        /* Top Surge Months & Milestones Grid */
-        .details-grid {
+        .stat-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-            gap: 25px;
-            margin-bottom: 35px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
         }
 
-        .section-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 22px;
+        .stat-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        .section-title {
-            font-size: 1.15rem;
-            font-weight: 600;
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }
+
+        .stat-card .value {
+            font-size: 1.8em;
+            font-weight: bold;
             color: #fff;
-            margin-bottom: 16px;
-            border-bottom: 1px solid var(--card-border);
-            padding-bottom: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
         }
 
-        /* Table & Lists */
-        .surge-list, .milestone-list {
+        .stat-card .desc {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            margin: 8px 0 0 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chart-container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 40px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+            position: relative;
+        }
+
+        .interactive-section {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            align-items: start;
+        }
+
+        @media (max-width: 1000px) {
+            .interactive-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .month-detail-panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+            position: sticky;
+            top: 30px;
+            min-height: 480px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .panel-header h2 {
+            margin: 0;
+            font-size: 1.6em;
+            color: #fff;
+        }
+
+        .panel-header .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .panel-stat-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .panel-stat-box {
+            background-color: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .panel-stat-box .lbl {
+            font-size: 0.8em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .panel-stat-box .val {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .species-list-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: 250px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: rgba(0,0,0,0.2);
+            padding: 10px 15px;
+        }
+
+        .species-list-container h4 {
+            margin: 0 0 10px 0;
+            font-size: 0.9em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .species-list-container ul {
+            margin: 0;
+            padding: 0;
             list-style: none;
         }
 
-        .surge-item, .milestone-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 11px 0;
-            border-bottom: 1px solid #202430;
-            font-size: 0.95rem;
+        .species-list-container li {
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.95em;
         }
 
-        .surge-item:last-child, .milestone-item:last-child {
+        .species-list-container li:last-child {
             border-bottom: none;
         }
 
-        .badge {
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .badge-orange { background: rgba(255, 159, 67, 0.15); color: var(--accent-orange); border: 1px solid rgba(255, 159, 67, 0.3); }
-        .badge-blue { background: rgba(72, 219, 251, 0.15); color: var(--accent-blue); border: 1px solid rgba(72, 219, 251, 0.3); }
-        .badge-green { background: rgba(29, 209, 161, 0.15); color: var(--accent-green); border: 1px solid rgba(29, 209, 161, 0.3); }
-        
-        .item-main {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .item-title {
-            font-weight: 500;
-            color: #fff;
-        }
-
-        .item-sub {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .item-right {
-            text-align: right;
-        }
-
-        footer {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            margin-top: 50px;
-            border-top: 1px solid var(--card-border);
-            padding-top: 20px;
-        }
-
-        a {
-            color: var(--accent-orange);
+        .species-list-container li a {
+            color: #4db8ff;
             text-decoration: none;
         }
-        a:hover {
+
+        .species-list-container li a:hover {
             text-decoration: underline;
+        }
+
+        .milestone-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(254, 202, 87, 0.12);
+            color: var(--accent);
+            border: 1px solid rgba(254, 202, 87, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-left: 8px;
+        }
+
+        .milestone-alert {
+            background: linear-gradient(135deg, rgba(255,159,67,0.15) 0%, rgba(254,202,87,0.05) 100%);
+            border: 1px solid rgba(255,159,67,0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .milestone-alert .medal {
+            font-size: 2.2em;
+        }
+
+        .milestone-alert .msg {
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+
+        .milestone-alert strong {
+            color: var(--accent);
+        }
+
+        .trip-tag {
+            display: inline-block;
+            background-color: rgba(77, 184, 255, 0.1);
+            color: #4db8ff;
+            border: 1px solid rgba(77, 184, 255, 0.25);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            margin-top: 5px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>📈 Photographic Species Life List Growth</h1>
-            <p class="subtitle">Monthly cumulative progress of Bill Walker's bird photography life list (November 2003 – Present)</p>
+            <div>
+                <h1>Photo Life List Growth Timeline</h1>
+                <p style="margin: 5px 0 0 0; color: var(--text-muted);">Historical growth tracking of unique photographed bird species.</p>
+            </div>
+            <div class="total-badge">1014 Species</div>
         </header>
 
-        <!-- Stats Overview -->
-        <div class="stats-grid">
+        <div class="stat-grid">
             <div class="stat-card">
-                <div class="stat-label">Total Photo Life List</div>
-                <div class="stat-value">1014</div>
-                <div class="stat-desc">Published species photographed</div>
+                <h3>First Published Photo</h3>
+                <div class="value" style="font-size: 1.5em; color: var(--primary);">Trumpeter Swan</div>
+                <div class="desc">2003-11-08 @ Upper Mississippi NWR</div>
             </div>
-
-            <div class="stat-card blue">
-                <div class="stat-label">First Photo Date</div>
-                <div class="stat-value" style="font-size: 1.35rem; margin-top: 4px;">2003-11-08</div>
-                <div class="stat-desc">Trumpeter Swan (Upper Mississippi NWR)</div>
+            <div class="stat-card">
+                <h3>Latest Published Photo</h3>
+                <div class="value" style="font-size: 1.5em; color: #2ed573;">Cook's Petrel</div>
+                <div class="desc">2026-07-05 @ Unknown Location</div>
             </div>
-
-            <div class="stat-card green">
-                <div class="stat-label">Latest Photo Date</div>
-                <div class="stat-value" style="font-size: 1.35rem; margin-top: 4px;">2026-07-05</div>
-                <div class="stat-desc">Cook's Petrel</div>
+            <div class="stat-card">
+                <h3>Span of Lifelist</h3>
+                <div class="value">22.8 Years</div>
+                <div class="desc">Active over 273 continuous months</div>
             </div>
-
-            <div class="stat-card purple">
-                <div class="stat-label">Active Timeline</div>
-                <div class="stat-value" style="font-size: 1.5rem; margin-top: 3px;">22.8 yrs</div>
-                <div class="stat-desc">273 total months (~44.6 species/yr)</div>
+            <div class="stat-card">
+                <h3>Average Growth</h3>
+                <div class="value">3.7 / mo</div>
+                <div class="desc">New species added per month average</div>
             </div>
         </div>
 
-        <!-- Main Chart -->
-        <div class="chart-section">
-            <div class="chart-header">
-                <div class="chart-title">Month-by-Month Cumulative Growth & Additions</div>
-                <div class="chart-controls">
-                    <button class="btn active" id="btn-cumulative" onclick="setChartMode('both')">Cumulative & Monthly</button>
-                    <button class="btn" id="btn-cum-only" onclick="setChartMode('cumulative')">Cumulative Only</button>
-                    <button class="btn" id="btn-monthly-only" onclick="setChartMode('monthly')">Monthly Additions Only</button>
-                    <span style="border-left: 1px solid var(--card-border); margin: 0 4px;"></span>
-                    <button class="btn active" id="btn-all" onclick="setTimeRange('all')">All Time</button>
-                    <button class="btn" id="btn-10y" onclick="setTimeRange(10)">Last 10Y</button>
-                    <button class="btn" id="btn-5y" onclick="setTimeRange(5)">Last 5Y</button>
-                </div>
-            </div>
-            <div class="chart-wrapper">
-                <canvas id="growthChart"></canvas>
-            </div>
+        <div class="chart-container">
+            <canvas id="growthChart" style="width: 100%; height: 350px;"></canvas>
         </div>
 
-        <!-- Details Grid -->
-        <div class="details-grid">
-            <!-- Top Surge Months -->
-            <div class="section-card">
-                <div class="section-title">
-                    <span>🚀 Top Birding Surge Months</span>
-                    <span class="badge badge-orange">Highest Additions</span>
+        <div class="interactive-section">
+            <div class="chart-container" style="padding: 20px; min-height: 480px; margin-bottom: 0;">
+                <h3 style="margin-top:0; border-bottom: 1px solid var(--border-color); padding-bottom:10px;">🏆 Lifelist Milestones</h3>
+                <div id="milestones-timeline-list" style="display: flex; flex-direction: column; gap: 15px; max-height: 430px; overflow-y: auto; padding-right: 10px;">
+                    <!-- Milestone Cards will render here -->
                 </div>
-                <ul class="surge-list" id="surge-list-container">
-                    <!-- Populated by JS -->
-                </ul>
             </div>
 
-            <!-- Key Milestones -->
-            <div class="section-card">
-                <div class="section-title">
-                    <span>🏆 Milestone Species</span>
-                    <span class="badge badge-green">Timeline</span>
+            <div class="month-detail-panel" id="detail-panel">
+                <div class="panel-header">
+                    <h2 id="panel-month-label">Select a Month</h2>
+                    <div class="subtitle" id="panel-month-sub">Click on any point in the chart to inspect details</div>
                 </div>
-                <ul class="milestone-list" id="milestone-list-container">
-                    <!-- Populated by JS -->
-                </ul>
+                <div id="panel-content-body" style="display: none; flex-direction: column; flex-grow: 1;">
+                    <div class="panel-stat-row">
+                        <div class="panel-stat-box">
+                            <div class="lbl">New Species</div>
+                            <div class="val" id="panel-new-count">0</div>
+                        </div>
+                        <div class="panel-stat-box">
+                            <div class="lbl">Total Species</div>
+                            <div class="val" id="panel-cum-count">0</div>
+                        </div>
+                    </div>
+                    
+                    <div id="panel-milestone-container"></div>
+                    <div id="panel-trip-container" style="margin-bottom: 20px;"></div>
+
+                    <div class="species-list-container">
+                        <h4 id="panel-list-header">Species Added</h4>
+                        <ul id="panel-species-list">
+                            <!-- Species list here -->
+                        </ul>
+                    </div>
+                </div>
+                <div id="panel-placeholder" style="flex-grow: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-style: italic; text-align: center;">
+                    Click a point along the chart line above to see which new species were added, milestones crossed, and trips taken in that month.
+                </div>
             </div>
         </div>
-
-        <footer>
-            <p>Data dynamically extracted from <a href="file:///Users/walker/Dropbox/smugmug-species-list/lrcat_utils.py">Lightroom Catalog</a>. View full indexes in <a href="chronological_life_list.html">Chronological Life List</a> or <a href="taxonomic_life_list.html">Taxonomic Life List</a>.</p>
-        </footer>
     </div>
 
     <script>
         const rawTimeline = [{"month": "2003-11", "label": "Nov 2003", "year": 2003, "new_count": 1, "cumulative": 1, "species_names": ["Trumpeter Swan"], "milestones": [{"milestone": 1, "species": "Trumpeter Swan", "date": "2003-11-08", "location": "Upper Mississippi NWR", "month": "2003-11"}], "trips": [], "locations": ["Upper Mississippi NWR"]}, {"month": "2003-12", "label": "Dec 2003", "year": 2003, "new_count": 0, "cumulative": 1, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2004-01", "label": "Jan 2004", "year": 2004, "new_count": 2, "cumulative": 3, "species_names": ["Surf Scoter", "Heermann's Gull"], "milestones": [], "trips": [], "locations": ["Shoreline Park--Shoreline Lake area", "Coast Guard Pier"]}, {"month": "2004-02", "label": "Feb 2004", "year": 2004, "new_count": 0, "cumulative": 3, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2004-03", "label": "Mar 2004", "year": 2004, "new_count": 0, "cumulative": 3, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2004-04", "label": "Apr 2004", "year": 2004, "new_count": 2, "cumulative": 5, "species_names": ["Neotropic Cormorant", "Tricolored Heron"], "milestones": [], "trips": [], "locations": ["Sabal Palm Audubon Sanctuary", "Brownsville"]}, {"month": "2004-05", "label": "May 2004", "year": 2004, "new_count": 3, "cumulative": 8, "species_names": ["Anna's Hummingbird", "American Avocet", "Black-crowned Night Heron"], "milestones": [], "trips": [], "locations": ["Palo Alto Duck Pond"]}, {"month": "2004-06", "label": "Jun 2004", "year": 2004, "new_count": 0, "cumulative": 8, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2004-07", "label": "Jul 2004", "year": 2004, "new_count": 1, "cumulative": 9, "species_names": ["California Quail"], "milestones": [], "trips": [], "locations": ["Pt. Reyes National Seashore"]}, {"month": "2004-08", "label": "Aug 2004", "year": 2004, "new_count": 0, "cumulative": 9, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2004-09", "label": "Sep 2004", "year": 2004, "new_count": 2, "cumulative": 11, "species_names": ["Least Sandpiper", "Black Turnstone"], "milestones": [], "trips": [], "locations": ["Don Edwards Center", "Santa Cruz"]}, {"month": "2004-10", "label": "Oct 2004", "year": 2004, "new_count": 2, "cumulative": 13, "species_names": ["American Dipper", "Red-breasted Nuthatch"], "milestones": [], "trips": [], "locations": ["Malheur NWR (general)"]}, {"month": "2004-11", "label": "Nov 2004", "year": 2004, "new_count": 2, "cumulative": 15, "species_names": ["Loggerhead Shrike", "White-crowned Sparrow"], "milestones": [], "trips": [], "locations": ["Sacramento NWR (use more specific hotspots when possible)", "Ulistac Natural Area"]}, {"month": "2004-12", "label": "Dec 2004", "year": 2004, "new_count": 1, "cumulative": 16, "species_names": ["Golden Eagle"], "milestones": [], "trips": [], "locations": ["Drawbridge, Fremont, California, USA"]}, {"month": "2005-01", "label": "Jan 2005", "year": 2005, "new_count": 1, "cumulative": 17, "species_names": ["Canvasback"], "milestones": [], "trips": [], "locations": ["Lake Merritt"]}, {"month": "2005-02", "label": "Feb 2005", "year": 2005, "new_count": 2, "cumulative": 19, "species_names": ["Ring-billed Gull", "Say's Phoebe"], "milestones": [], "trips": [], "locations": ["Charleston Slough", "Sunnyvale Baylands"]}, {"month": "2005-03", "label": "Mar 2005", "year": 2005, "new_count": 0, "cumulative": 19, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2005-04", "label": "Apr 2005", "year": 2005, "new_count": 1, "cumulative": 20, "species_names": ["Sanderling"], "milestones": [], "trips": [], "locations": ["South Padre Island"]}, {"month": "2005-05", "label": "May 2005", "year": 2005, "new_count": 1, "cumulative": 21, "species_names": ["Brown Creeper"], "milestones": [], "trips": [], "locations": ["Stevens Creek County Park (please use a more specific hotspot where possible)"]}, {"month": "2005-06", "label": "Jun 2005", "year": 2005, "new_count": 3, "cumulative": 24, "species_names": ["Purple Martin", "Plumbeous Vireo", "Burrowing Owl"], "milestones": [], "trips": [], "locations": ["Cape May", "Chimney Creek Campground, California, USA"]}, {"month": "2005-07", "label": "Jul 2005", "year": 2005, "new_count": 0, "cumulative": 24, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2005-08", "label": "Aug 2005", "year": 2005, "new_count": 0, "cumulative": 24, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2005-09", "label": "Sep 2005", "year": 2005, "new_count": 3, "cumulative": 27, "species_names": ["American White Pelican", "Red-tailed Hawk", "Barn Swallow"], "milestones": [], "trips": [], "locations": ["Coyote Hills Regional Park", "Arastradero Preserve"]}, {"month": "2005-10", "label": "Oct 2005", "year": 2005, "new_count": 1, "cumulative": 28, "species_names": ["Canyon Wren"], "milestones": [], "trips": [], "locations": ["Yosemite"]}, {"month": "2005-11", "label": "Nov 2005", "year": 2005, "new_count": 4, "cumulative": 32, "species_names": ["Northern Flicker", "Spotted Sandpiper", "Snow Goose", "Sandhill Crane"], "milestones": [], "trips": [], "locations": ["San Jose, California, USA", "Bosque del Apache, New Mexico, USA"]}, {"month": "2005-12", "label": "Dec 2005", "year": 2005, "new_count": 1, "cumulative": 33, "species_names": ["Marsh Wren"], "milestones": [], "trips": [], "locations": ["Donald M. Somers Water Pollution Control Plant"]}, {"month": "2006-01", "label": "Jan 2006", "year": 2006, "new_count": 4, "cumulative": 37, "species_names": ["Bushtit", "Snowy Owl", "Green-winged Teal", "Harlequin Duck"], "milestones": [], "trips": [], "locations": ["California, USA"]}, {"month": "2006-02", "label": "Feb 2006", "year": 2006, "new_count": 2, "cumulative": 39, "species_names": ["Common Goldeneye", "Steller's Jay"], "milestones": [], "trips": [], "locations": ["California, USA"]}, {"month": "2006-03", "label": "Mar 2006", "year": 2006, "new_count": 4, "cumulative": 43, "species_names": ["Brewer's Blackbird", "Mallard", "Ring-necked Pheasant", "Cedar Waxwing"], "milestones": [], "trips": [], "locations": ["Palo Alto Duck Pond, Palo Alto, California, USA", "2138 King Court, Santa Clara, California, USA"]}, {"month": "2006-04", "label": "Apr 2006", "year": 2006, "new_count": 2, "cumulative": 45, "species_names": ["Mourning Dove", "Song Sparrow"], "milestones": [], "trips": [], "locations": ["University Lutheran Church, Palo Alto, California, USA", "Coast Guard Pier, Monterey, California, USA"]}, {"month": "2006-05", "label": "May 2006", "year": 2006, "new_count": 1, "cumulative": 46, "species_names": ["Snowy Plover"], "milestones": [], "trips": [], "locations": ["Zmudowski State Beach, Santa Cruz, California, USA"]}, {"month": "2006-06", "label": "Jun 2006", "year": 2006, "new_count": 2, "cumulative": 48, "species_names": ["Common Yellowthroat", "Ruddy Duck"], "milestones": [], "trips": [], "locations": ["Charleston Slough, Palo Alto, California, USA", "Palo Alto Duck Pond, Palo Alto, California, USA"]}, {"month": "2006-07", "label": "Jul 2006", "year": 2006, "new_count": 2, "cumulative": 50, "species_names": ["Black-necked Stilt", "Western Screech-Owl"], "milestones": [], "trips": [], "locations": ["California, USA"]}, {"month": "2006-08", "label": "Aug 2006", "year": 2006, "new_count": 0, "cumulative": 50, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2006-09", "label": "Sep 2006", "year": 2006, "new_count": 0, "cumulative": 50, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2006-10", "label": "Oct 2006", "year": 2006, "new_count": 3, "cumulative": 53, "species_names": ["Common Murre", "Long-billed Curlew", "Rock Wren"], "milestones": [], "trips": [], "locations": ["California, USA", "Coyote Lake County Park, Gilroy, California, USA"]}, {"month": "2006-11", "label": "Nov 2006", "year": 2006, "new_count": 2, "cumulative": 55, "species_names": ["Ridgway's Rail", "Bonaparte's Gull"], "milestones": [], "trips": [], "locations": ["California, USA", "Venice Beach, Half Moon Bay, California, USA"]}, {"month": "2006-12", "label": "Dec 2006", "year": 2006, "new_count": 6, "cumulative": 61, "species_names": ["Brown Pelican", "Great Egret", "Laughing Gull", "Roseate Spoonbill", "Royal Tern", "White Ibis"], "milestones": [], "trips": [], "locations": ["Florida, USA", "Venice Rookery"]}, {"month": "2007-01", "label": "Jan 2007", "year": 2007, "new_count": 8, "cumulative": 69, "species_names": ["American Wigeon", "Bufflehead", "Fox Sparrow", "Lincoln's Sparrow", "Ruby-crowned Kinglet", "Townsend's Warbler", "Black-bellied Plover", "Belted Kingfisher"], "milestones": [], "trips": [], "locations": ["Cascade Ranch, Pescadero, California, USA", "Union City Library, Union City, California, USA"]}, {"month": "2007-02", "label": "Feb 2007", "year": 2007, "new_count": 2, "cumulative": 71, "species_names": ["Black Swan", "Western Gull"], "milestones": [], "trips": [], "locations": ["Spring Lake, Scotts Valley, California, USA", "California, USA"]}, {"month": "2007-03", "label": "Mar 2007", "year": 2007, "new_count": 4, "cumulative": 75, "species_names": ["Red-winged Blackbird", "Turkey Vulture", "Allen's Hummingbird", "Wild Turkey"], "milestones": [], "trips": [], "locations": ["California, USA", "Point Reyes National Seashore, Point Reyes Station, California, USA"]}, {"month": "2007-04", "label": "Apr 2007", "year": 2007, "new_count": 1, "cumulative": 76, "species_names": ["Short-billed Dowitcher"], "milestones": [], "trips": [], "locations": ["Foster City Radio Tower, Foster City, California, USA"]}, {"month": "2007-05", "label": "May 2007", "year": 2007, "new_count": 1, "cumulative": 77, "species_names": ["Spotted Towhee"], "milestones": [], "trips": [], "locations": ["California, USA"]}, {"month": "2007-06", "label": "Jun 2007", "year": 2007, "new_count": 4, "cumulative": 81, "species_names": ["Black-headed Grosbeak", "California Scrub-Jay", "Yellow-headed Blackbird", "Evening Grosbeak"], "milestones": [], "trips": [], "locations": ["Hidden Villa, California, USA", "California, USA"]}, {"month": "2007-07", "label": "Jul 2007", "year": 2007, "new_count": 6, "cumulative": 87, "species_names": ["Boreal Chickadee", "Franklin's Gull", "White-throated Sparrow", "Nelson's Sparrow", "Northern Hawk Owl", "White-tailed Ptarmigan"], "milestones": [], "trips": [], "locations": ["Jasper National Park, Jasper, Alberta, Canada", "Cold Lake Provincial Park, Alberta, Canada"]}, {"month": "2007-08", "label": "Aug 2007", "year": 2007, "new_count": 1, "cumulative": 88, "species_names": ["Acorn Woodpecker"], "milestones": [], "trips": [], "locations": ["Guadalupe Oak Grove Park, San Jose, California, USA"]}, {"month": "2007-09", "label": "Sep 2007", "year": 2007, "new_count": 4, "cumulative": 92, "species_names": ["Black Skimmer", "Black-footed Albatross", "Sabine's Gull", "Tufted Puffin"], "milestones": [], "trips": [], "locations": ["Cordell Bank, Bodega Bay, California, USA"]}, {"month": "2007-10", "label": "Oct 2007", "year": 2007, "new_count": 1, "cumulative": 93, "species_names": ["American Goldfinch"], "milestones": [], "trips": [], "locations": ["Blufftop Coastal Park and Poplar Beach"]}, {"month": "2007-11", "label": "Nov 2007", "year": 2007, "new_count": 3, "cumulative": 96, "species_names": ["Redhead", "Ring-necked Duck", "American Pipit"], "milestones": [], "trips": [], "locations": ["Lake Merritt, Oakland, California, USA", "California, USA"]}, {"month": "2007-12", "label": "Dec 2007", "year": 2007, "new_count": 0, "cumulative": 96, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2008-01", "label": "Jan 2008", "year": 2008, "new_count": 10, "cumulative": 106, "species_names": ["Horned Grebe", "Whooping Crane", "Wood Stork", "American Bittern", "Anhinga", "Common Gallinule", "Glossy Ibis", "Limpkin", "Mottled Duck", "Black Vulture"], "milestones": [{"milestone": 100, "species": "American Bittern", "date": "2008-01-27", "location": "Viera Wetlands, Viera, Florida, USA", "month": "2008-01"}], "trips": [], "locations": ["Viera Wetlands, Viera, Florida, USA", "Arrowhead Marsh, Oakland, California, USA"]}, {"month": "2008-02", "label": "Feb 2008", "year": 2008, "new_count": 2, "cumulative": 108, "species_names": ["Common Merganser", "Bewick's Wren"], "milestones": [], "trips": [], "locations": ["Union City Library, Union City, California, USA", "Arastradero Preserve, Palo Alto, California, USA"]}, {"month": "2008-03", "label": "Mar 2008", "year": 2008, "new_count": 1, "cumulative": 109, "species_names": ["Clark's Grebe"], "milestones": [], "trips": [], "locations": ["California, USA"]}, {"month": "2008-04", "label": "Apr 2008", "year": 2008, "new_count": 43, "cumulative": 152, "species_names": ["Blue Grosbeak", "Crested Caracara", "Curve-billed Thrasher", "Northern Bobwhite", "Northern Cardinal", "Pyrrhuloxia", "Scaled Quail", "Black-bellied Whistling-Duck", "Olive Sparrow", "Prothonotary Warbler", "Red-crowned Amazon", "Summer Tanager", "White-throated Robin", "Ferruginous Pygmy-Owl", "Harris's Hawk", "Northern Pygmy-Owl", "Scissor-tailed Flycatcher", "Swainson's Hawk", "White-tailed Hawk", "Black-crested Titmouse", "Cactus Wren", "Common Ground Dove", "Golden-fronted Woodpecker", "Great Kiskadee", "Green Jay", "Lesser Goldfinch", "Long-billed Thrasher", "Plain Chachalaca", "Yellow-breasted Chat", "Black-and-white Warbler", "Black-throated Green Warbler", "Eastern Screech-Owl", "Bronzed Cowbird", "Brown-headed Cowbird", "Great Blue Heron", "Greater Roadrunner", "Orchard Oriole", "Palm Warbler", "Sandwich Tern", "White-winged Dove", "Wilson's Plover", "Broad-winged Hawk", "Buff-bellied Hummingbird"], "milestones": [], "trips": ["Teas 2011"], "locations": ["Texas, USA", "Martin Refuge, Javalina Tract, Edinburg, Texas, USA"]}, {"month": "2008-05", "label": "May 2008", "year": 2008, "new_count": 8, "cumulative": 160, "species_names": ["Brandt's Cormorant", "Horned Lark", "Brewer's Sparrow", "Wilson's Phalarope", "Chipping Sparrow", "Hermit Warbler", "Townsend's Solitaire", "Nashville Warbler"], "milestones": [], "trips": [], "locations": ["California, USA", "Point Lobos, Monterey, California, USA"]}, {"month": "2008-06", "label": "Jun 2008", "year": 2008, "new_count": 1, "cumulative": 161, "species_names": ["American Crow"], "milestones": [], "trips": [], "locations": ["Point Lobos, Monterey, California, USA"]}, {"month": "2008-07", "label": "Jul 2008", "year": 2008, "new_count": 4, "cumulative": 165, "species_names": ["Ash-throated Flycatcher", "Marbled Godwit", "Pacific Loon", "House Finch"], "milestones": [], "trips": [], "locations": ["Moss Landing State Beach, Santa Cruz, California, USA", "Monte Bello Open Space Preserve, Palo Alto, California, USA"]}, {"month": "2008-08", "label": "Aug 2008", "year": 2008, "new_count": 0, "cumulative": 165, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2008-09", "label": "Sep 2008", "year": 2008, "new_count": 2, "cumulative": 167, "species_names": ["Solitary Sandpiper", "Pygmy Nuthatch"], "milestones": [], "trips": [], "locations": ["Vasona Creek, San Jose, California, USA", "Coyote Point Marina, San Mateo, California, USA"]}, {"month": "2008-10", "label": "Oct 2008", "year": 2008, "new_count": 1, "cumulative": 168, "species_names": ["Snow Bunting"], "milestones": [], "trips": [], "locations": ["Potosi Point, Potosi, Wisconsin, USA"]}, {"month": "2008-11", "label": "Nov 2008", "year": 2008, "new_count": 6, "cumulative": 174, "species_names": ["Common Raven", "Savannah Sparrow", "Western Bluebird", "Pelagic Cormorant", "Snowy Egret", "Western Meadowlark"], "milestones": [], "trips": [], "locations": ["Limantour Beach, Point Reyes Station, California, USA", "Bodega Bay, California, USA"]}, {"month": "2008-12", "label": "Dec 2008", "year": 2008, "new_count": 3, "cumulative": 177, "species_names": ["Golden-crowned Sparrow", "Black Phoebe", "American Coot"], "milestones": [], "trips": [], "locations": ["McClellan Ranch, Cupertino, California, USA", "Lake Elizabeth, Fremont, California, USA"]}, {"month": "2009-01", "label": "Jan 2009", "year": 2009, "new_count": 4, "cumulative": 181, "species_names": ["Hooded Merganser", "Blue-winged Teal", "Cinnamon Teal", "American Robin"], "milestones": [], "trips": [], "locations": ["Foster City Radio Tower, San Mateo, California, USA", "Shoreline Lake, Mountain View, California, USA"]}, {"month": "2009-02", "label": "Feb 2009", "year": 2009, "new_count": 2, "cumulative": 183, "species_names": ["American Kestrel", "Orange-crowned Warbler"], "milestones": [], "trips": [], "locations": ["Flannery Road, Dixon, California, USA", "Merced NWR, Merced, California, USA"]}, {"month": "2009-03", "label": "Mar 2009", "year": 2009, "new_count": 2, "cumulative": 185, "species_names": ["Nuttall's Woodpecker", "Tree Swallow"], "milestones": [], "trips": [], "locations": ["Home, Santa Clara, California, USA", "Ed Levin County Park Sandy Wool, Alviso, California, USA"]}, {"month": "2009-04", "label": "Apr 2009", "year": 2009, "new_count": 1, "cumulative": 186, "species_names": ["Bullock's Oriole"], "milestones": [], "trips": [], "locations": ["Palo Alto Duck Pond, Palo Alto, California, USA"]}, {"month": "2009-05", "label": "May 2009", "year": 2009, "new_count": 7, "cumulative": 193, "species_names": ["Bank Swallow", "House Sparrow", "Clark's Nutcracker", "Lewis's Woodpecker", "Pinyon Jay", "Red-naped Sapsucker", "Blue-gray Gnatcatcher"], "milestones": [], "trips": [], "locations": ["Steve's House, Sisters, Oregon, USA", "Fall River Mills, California, USA"]}, {"month": "2009-06", "label": "Jun 2009", "year": 2009, "new_count": 0, "cumulative": 193, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2009-07", "label": "Jul 2009", "year": 2009, "new_count": 0, "cumulative": 193, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2009-08", "label": "Aug 2009", "year": 2009, "new_count": 1, "cumulative": 194, "species_names": ["Oak Titmouse"], "milestones": [], "trips": [], "locations": ["Guadalupe Oak Grove Park, San Jose, California, USA"]}, {"month": "2009-09", "label": "Sep 2009", "year": 2009, "new_count": 3, "cumulative": 197, "species_names": ["Black Oystercatcher", "Wandering Tattler", "Pink-footed Shearwater"], "milestones": [], "trips": [], "locations": ["Venice Beach, Half Moon Bay, California, USA", "Monterey Bay, Monterey, California, USA"]}, {"month": "2009-10", "label": "Oct 2009", "year": 2009, "new_count": 0, "cumulative": 197, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2009-11", "label": "Nov 2009", "year": 2009, "new_count": 0, "cumulative": 197, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2009-12", "label": "Dec 2009", "year": 2009, "new_count": 1, "cumulative": 198, "species_names": ["American Herring Gull"], "milestones": [], "trips": [], "locations": ["Drawbridge, Fremont, California, USA"]}, {"month": "2010-01", "label": "Jan 2010", "year": 2010, "new_count": 7, "cumulative": 205, "species_names": ["Northern Pintail", "Wood Duck", "Tufted Duck", "Western Grebe", "Long-eared Owl", "Mountain Bluebird", "White-breasted Nuthatch"], "milestones": [{"milestone": 200, "species": "Wood Duck", "date": "2010-01-08", "location": "Union City Library, Union City, California, USA", "month": "2010-01"}], "trips": [], "locations": ["Panoche Valley, Panoche, California, USA", "Lake Merritt, Oakland, California, USA"]}, {"month": "2010-02", "label": "Feb 2010", "year": 2010, "new_count": 0, "cumulative": 205, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2010-03", "label": "Mar 2010", "year": 2010, "new_count": 1, "cumulative": 206, "species_names": ["Yellow-billed Magpie"], "milestones": [], "trips": [], "locations": ["Ed Levin County Park Sandy Wool, Alviso, California, USA"]}, {"month": "2010-04", "label": "Apr 2010", "year": 2010, "new_count": 5, "cumulative": 211, "species_names": ["Calliope Hummingbird", "Lazuli Bunting", "Northern House Wren", "Violet-green Swallow", "Canada Goose"], "milestones": [], "trips": [], "locations": ["Rancho San Antonio, Cupertino, California, USA", "Ed Levin County Park Sandy Wool, Alviso, California, USA"]}, {"month": "2010-05", "label": "May 2010", "year": 2010, "new_count": 4, "cumulative": 215, "species_names": ["California Towhee", "Killdeer", "Western Kingbird", "White-faced Ibis"], "milestones": [], "trips": [], "locations": ["Sutter Buttes, Sutter, California, USA"]}, {"month": "2010-06", "label": "Jun 2010", "year": 2010, "new_count": 36, "cumulative": 251, "species_names": ["Arctic Tern", "Black-billed Magpie", "Common Loon", "Dark-eyed Junco", "Eared Grebe", "Hudsonian Godwit", "Red-necked Grebe", "Alder Flycatcher", "Black-capped Chickadee", "Glaucous Gull", "Lapland Longspur", "Long-tailed Duck", "Long-tailed Jaeger", "Red-necked Phalarope", "Gray-cheeked Thrush", "Northern Waterthrush", "Northern Yellow Warbler", "Semipalmated Sandpiper", "Willow Ptarmigan", "Canada Jay", "Common Eider", "Gyrfalcon", "Northern Wheatear", "Redpoll", "Short-billed Gull", "Bluethroat", "Arctic Warbler", "Black-legged Kittiwake", "Dunlin", "Northern Shrike", "Red-throated Loon", "Western Sandpiper", "Bar-tailed Godwit", "Eastern Yellow Wagtail", "Rock Ptarmigan", "Short-eared Owl"], "milestones": [], "trips": ["Alaska 2010"], "locations": ["Anchorage, Alaska, USA", "Council Road, Nome, Alaska, USA"]}, {"month": "2010-07", "label": "Jul 2010", "year": 2010, "new_count": 0, "cumulative": 251, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2010-08", "label": "Aug 2010", "year": 2010, "new_count": 22, "cumulative": 273, "species_names": ["Gila Woodpecker", "Rufous-winged Sparrow", "Broad-billed Hummingbird", "Canyon Towhee", "Thick-billed Kingbird", "Black-throated Sparrow", "Botteri's Sparrow", "Bridled Titmouse", "Coppery-tailed Trogon", "Blue-throated Mountain-gem", "Painted Redstart", "Sulphur-bellied Flycatcher", "Yellow-eyed Junco", "Arizona Woodpecker", "Black-chinned Sparrow", "Lucifer Hummingbird", "Buff-breasted Flycatcher", "Hepatic Tanager", "Spotted Owl", "Gambel's Quail", "Mississippi Kite", "Northern Beardless-Tyrannulet"], "milestones": [], "trips": [], "locations": ["Arizona, USA", "Arizona-Sonoran Desert Museum, Tucson, Arizona, USA"]}, {"month": "2010-09", "label": "Sep 2010", "year": 2010, "new_count": 0, "cumulative": 273, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2010-10", "label": "Oct 2010", "year": 2010, "new_count": 0, "cumulative": 273, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2010-11", "label": "Nov 2010", "year": 2010, "new_count": 0, "cumulative": 273, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2010-12", "label": "Dec 2010", "year": 2010, "new_count": 0, "cumulative": 273, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2011-01", "label": "Jan 2011", "year": 2011, "new_count": 2, "cumulative": 275, "species_names": ["California Condor", "Glaucous-winged Gull"], "milestones": [], "trips": [], "locations": ["Big Sur, California, USA", "Bean Hollow State Beach, Pescadero, California, USA"]}, {"month": "2011-02", "label": "Feb 2011", "year": 2011, "new_count": 3, "cumulative": 278, "species_names": ["Cassin's Kingbird", "Prairie Falcon", "Mountain Plover"], "milestones": [], "trips": [], "locations": ["No State, USA", "Panoche Valley, Panoche, California, USA"]}, {"month": "2011-03", "label": "Mar 2011", "year": 2011, "new_count": 1, "cumulative": 279, "species_names": ["Pied-billed Grebe"], "milestones": [], "trips": [], "locations": ["Yahoo/Moffett Pond, Sunnyvale, California, USA"]}, {"month": "2011-04", "label": "Apr 2011", "year": 2011, "new_count": 1, "cumulative": 280, "species_names": ["Surfbird"], "milestones": [], "trips": [], "locations": ["Santa Cruz, California, USA"]}, {"month": "2011-05", "label": "May 2011", "year": 2011, "new_count": 6, "cumulative": 286, "species_names": ["Cliff Swallow", "Long-billed Dowitcher", "California Thrasher", "Black-throated Gray Warbler", "Lawrence's Goldfinch", "Western Wood-Pewee"], "milestones": [], "trips": [], "locations": ["Palo Alto Baylands Boat Launch, Palo Alto, California, USA", "Foster City Radio Tower, San Mateo, California, USA"]}, {"month": "2011-06", "label": "Jun 2011", "year": 2011, "new_count": 0, "cumulative": 286, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2011-07", "label": "Jul 2011", "year": 2011, "new_count": 1, "cumulative": 287, "species_names": ["Barred Owl"], "milestones": [], "trips": [], "locations": ["Muir Woods National Monument, Mill Valley, California, USA"]}, {"month": "2011-08", "label": "Aug 2011", "year": 2011, "new_count": 6, "cumulative": 293, "species_names": ["Hairy Woodpecker", "Field Sparrow", "Baird's Sandpiper", "Buller's Shearwater", "Hawaiian Petrel", "Red Phalarope"], "milestones": [], "trips": [], "locations": ["Farallon Islands, San Francisco, California, USA", "Rick and Sherry's House, Milwaukee, Wisconsin, USA"]}, {"month": "2011-09", "label": "Sep 2011", "year": 2011, "new_count": 1, "cumulative": 294, "species_names": ["White-tailed Kite"], "milestones": [], "trips": [], "locations": ["No State, USA"]}, {"month": "2011-10", "label": "Oct 2011", "year": 2011, "new_count": 2, "cumulative": 296, "species_names": ["Red-breasted Sapsucker", "Yellow-billed Loon"], "milestones": [], "trips": [], "locations": ["Bodega Pastures, Bodega, California, USA", "Donald M. Somers Water Pollution Control Plant, California, USA"]}, {"month": "2011-11", "label": "Nov 2011", "year": 2011, "new_count": 0, "cumulative": 296, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2011-12", "label": "Dec 2011", "year": 2011, "new_count": 2, "cumulative": 298, "species_names": ["Harris's Sparrow", "Peregrine Falcon"], "milestones": [], "trips": [], "locations": ["Cascade Ranch, Half Moon Bay, California, USA", "Point Reyes, California, USA"]}, {"month": "2012-01", "label": "Jan 2012", "year": 2012, "new_count": 1, "cumulative": 299, "species_names": ["Purple Finch"], "milestones": [], "trips": [], "locations": ["Cascade Ranch, Pescadero, California, USA"]}, {"month": "2012-02", "label": "Feb 2012", "year": 2012, "new_count": 96, "cumulative": 395, "species_names": ["Wrentit", "Greater Yellowlegs", "Common Squirrel-Cuckoo", "Hoffmann's Woodpecker", "Lesson's Motmot", "Rufous-backed Wren", "Stripe-headed Sparrow", "Tropical Screech-Owl", "Boat-billed Flycatcher", "Gartered Violaceous Trogon", "Groove-billed Ani", "Inca Dove", "Lineated Woodpecker", "Orange-fronted Parakeet", "Roadside Hawk", "Scarlet Macaw", "Striped Cuckoo", "Turquoise-browed Motmot", "White-throated Magpie-Jay", "Yellow-throated Euphonia", "Amazon Kingfisher", "Bare-throated Tiger-Heron", "Barred Antshrike", "Boat-billed Heron", "Collared Plover", "Common Black Hawk", "Double-striped Thick-knee", "Gray Hawk", "Green Kingfisher", "Hudsonian Whimbrel", "Northern Jacana", "Orange-collared Manakin", "Purple Gallinule", "Rufous-tailed Jacamar", "Streak-headed Woodcreeper", "White-whiskered Puffbird", "Yellow-headed Caracara", "Black-capped Flycatcher", "Blue-gray Tanager", "Fiery-billed Aracari", "Flame-throated Warbler", "Gray-headed Tanager", "Green Honeycreeper", "Lesser Nighthawk", "Red-legged Honeycreeper", "Rose-breasted Grosbeak", "Scarlet-rumped Tanager", "Volcano Hummingbird", "Bare-shanked Screech-Owl", "Black-billed Nightingale-Thrush", "Black-cheeked Warbler", "Collared Redstart", "Flame-colored Tanager", "Lesser Violetear", "Resplendent Quetzal", "Slaty Flowerpiercer", "Sooty Thrush", "Tufted Flycatcher", "Stripe-tailed Hummingbird", "Volcano Junco", "White-throated Mountain-gem", "Wrenthrush", "Bat Falcon", "Bronzy Hermit", "Buff-throated Saltator", "Keel-billed Toucan", "Long-tailed Tyrant", "Ochraceous Pewee", "Red-billed Pigeon", "Slaty-tailed Trogon", "Sooty-capped Chlorospingus", "Tropical Gnatcatcher", "Dull-mantled Antbird", "Great Black Hawk", "Ornate Hawk-Eagle", "Ruddy-tailed Flycatcher", "Rufous Motmot", "Black-cheeked Woodpecker", "Black-faced Grosbeak", "Black-hooded Antshrike", "Bright-rumped Attila", "Chestnut-colored Woodpecker", "Cinnamon Woodpecker", "Common Tody-Flycatcher", "Crested Guan", "Crested Oropendola", "Golden-hooded Tanager", "Graceful Black-throated Trogon", "Gray-headed Chachalaca", "Great Curassow", "Great Green Macaw", "Great Tinamou", "Montezuma Oropendola", "Pale-mandibled Aracari", "Semiplumbeous Hawk", "Smoky-brown Woodpecker"], "milestones": [{"milestone": 300, "species": "Wrentit", "date": "2012-02-03", "location": "No State, USA", "month": "2012-02"}], "trips": ["Costa Rica 2012"], "locations": ["La Selva Research Station, Costa Rica", "Rio Tarcoles Mangrove Boat Tour, Costa Rica"]}, {"month": "2012-03", "label": "Mar 2012", "year": 2012, "new_count": 12, "cumulative": 407, "species_names": ["Chestnut-capped Brushfinch", "Common Chlorospingus", "Green Thorntail", "Green-crowned Brilliant", "Mealy Amazon", "Prong-billed Barbet", "Silver-throated Tanager", "Violet Sabrewing", "Yellow-thighed Brushfinch", "Bananaquit", "Black-and-yellow Silky-flycatcher", "Coppery-headed Emerald"], "milestones": [{"milestone": 400, "species": "Mealy Amazon", "date": "2012-03-01", "location": "El Cafetal Inn, No State, Costa Rica", "month": "2012-03"}], "trips": ["Costa Rica 2012"], "locations": ["Bosque de Paz, Costa Rica", "El Cafetal Inn, No State, Costa Rica"]}, {"month": "2012-04", "label": "Apr 2012", "year": 2012, "new_count": 1, "cumulative": 408, "species_names": ["Red-shouldered Hawk"], "milestones": [], "trips": [], "locations": ["Ed Levin County Park Spring Valley, Alviso, California, USA"]}, {"month": "2012-05", "label": "May 2012", "year": 2012, "new_count": 13, "cumulative": 421, "species_names": ["Baltimore Oriole", "Chimney Swift", "Yellow-bellied Sapsucker", "Blue Jay", "Bobolink", "Eastern Kingbird", "Great Horned Owl", "Indigo Bunting", "Black-billed Cuckoo", "Chestnut-sided Warbler", "Downy Woodpecker", "Philadelphia Vireo", "Scarlet Tanager"], "milestones": [], "trips": [], "locations": ["Lion's Den Gorge Nature Preserve, Milwaukee, Wisconsin, USA", "Prairie du Chien, Wisconsin, USA"]}, {"month": "2012-06", "label": "Jun 2012", "year": 2012, "new_count": 0, "cumulative": 421, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2012-07", "label": "Jul 2012", "year": 2012, "new_count": 0, "cumulative": 421, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2012-08", "label": "Aug 2012", "year": 2012, "new_count": 1, "cumulative": 422, "species_names": ["Rufous Hummingbird"], "milestones": [], "trips": [], "locations": ["Our House, Santa Clara, California, USA"]}, {"month": "2012-09", "label": "Sep 2012", "year": 2012, "new_count": 1, "cumulative": 423, "species_names": ["Virginia Rail"], "milestones": [], "trips": [], "locations": ["Coyote Hills Regional Park, Fremont, California, USA"]}, {"month": "2012-10", "label": "Oct 2012", "year": 2012, "new_count": 0, "cumulative": 423, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2012-11", "label": "Nov 2012", "year": 2012, "new_count": 0, "cumulative": 423, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2012-12", "label": "Dec 2012", "year": 2012, "new_count": 1, "cumulative": 424, "species_names": ["Fish Crow"], "milestones": [], "trips": [], "locations": ["Celery Fields, Sarasota, Florida, USA"]}, {"month": "2013-01", "label": "Jan 2013", "year": 2013, "new_count": 0, "cumulative": 424, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2013-02", "label": "Feb 2013", "year": 2013, "new_count": 0, "cumulative": 424, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2013-03", "label": "Mar 2013", "year": 2013, "new_count": 36, "cumulative": 460, "species_names": ["Alpine Accentor", "Black Redstart", "Common Shelduck", "Common Wood-Pigeon", "Eurasian Wigeon", "European Robin", "European Starling", "Graylag Goose", "Great Cormorant", "Little Grebe", "Northern Lapwing", "Yellow-legged Gull", "Common Sandpiper", "Eurasian Siskin", "Greater Flamingo", "Slender-billed Gull", "Western Swamphen", "White Wagtail", "Zitting Cisticola", "Corn Bunting", "Eurasian Thick-knee", "Iberian Gray Shrike", "Little Owl", "Pin-tailed Sandgrouse", "Red Kite", "Red-legged Partridge", "Black Woodpecker", "Carrion Crow", "Coal Tit", "Eurasian Blackbird", "Eurasian Griffon", "Red Crossbill", "White-throated Dipper", "White-winged Snowfinch", "Yellow-billed Chough", "Pine Siskin"], "milestones": [], "trips": ["Spain 2013"], "locations": ["Catalunya, Spain", "Llobregat Delta, Catalunya, Spain"]}, {"month": "2013-04", "label": "Apr 2013", "year": 2013, "new_count": 0, "cumulative": 460, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2013-05", "label": "May 2013", "year": 2013, "new_count": 0, "cumulative": 460, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2013-06", "label": "Jun 2013", "year": 2013, "new_count": 16, "cumulative": 476, "species_names": ["Black-headed Gull", "Common Gull", "Meadow Pipit", "Atlantic Puffin", "Eurasian Oystercatcher", "Great Skua", "Northern Fulmar", "Northern Gannet", "Hooded Crow", "European Greenfinch", "Black Guillemot", "Common Ringed Plover", "Eurasian Jackdaw", "Common Redshank", "Great Black-backed Gull", "Eurasian Wren"], "milestones": [], "trips": ["Orkney Islands 2013"], "locations": ["Rural Areas of South Ronaldsay, Orkney, Great Britain", "Bankburn House, St. Margaret's Hope, Orkney, Great Britain"]}, {"month": "2013-07", "label": "Jul 2013", "year": 2013, "new_count": 0, "cumulative": 476, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2013-08", "label": "Aug 2013", "year": 2013, "new_count": 0, "cumulative": 476, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2013-09", "label": "Sep 2013", "year": 2013, "new_count": 0, "cumulative": 476, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2013-10", "label": "Oct 2013", "year": 2013, "new_count": 1, "cumulative": 477, "species_names": ["Cassin's Auklet"], "milestones": [], "trips": [], "locations": ["Farallon Islands, San Francisco, California, USA"]}, {"month": "2013-11", "label": "Nov 2013", "year": 2013, "new_count": 1, "cumulative": 478, "species_names": ["Costa's Hummingbird"], "milestones": [], "trips": [], "locations": ["Vasona Creek, San Jose, California, USA"]}, {"month": "2013-12", "label": "Dec 2013", "year": 2013, "new_count": 70, "cumulative": 548, "species_names": ["Lava Heron", "Galapagos Dove", "Great Frigatebird", "Large Ground-Finch", "Lava Gull", "Nazca Booby", "Red-billed Tropicbird", "Flightless Cormorant", "Galapagos Penguin", "Elliot's Storm-Petrel", "Mangrove Yellow Warbler", "Medium Ground-Finch", "Vampire Ground-Finch", "American Flamingo", "Blue-footed Booby", "Waved Albatross", "Andean Emerald", "Brown Inca", "Strong-billed Woodcreeper", "Violet-tailed Sylph", "White-booted Racket-tail", "Andean Cock-of-the-rock", "Blue-winged Mountain Tanager", "Flame-rumped Tanager", "Golden-headed Quetzal", "Lyre-tailed Nightjar", "Masked Water-Tyrant", "Middle American Leaftosser", "Moustached Antpitta", "Ochre-breasted Antpitta", "Orange-breasted Fruiteater", "Pacific Parrotlet", "Red-faced Spinetail", "Swallow Tanager", "Toucan Barbet", "Yellow-breasted Antpitta", "Black-banded Owl", "Chestnut-breasted Coronet", "Crimson-rumped Toucanet", "Rufous-breasted Chat-Tyrant", "Beryl-spangled Tanager", "Blackburnian Warbler", "Bluish Flowerpiercer", "Cinnamon Flycatcher", "Masked Trogon", "Montane Woodcreeper", "Pale-edged Flycatcher", "Saffron-crowned Tanager", "Sparkling Violetear", "Sulphur-bellied Tyrannulet", "White-bellied Antpitta", "Black-crested Warbler", "Torrent Duck", "Blue-backed Conebill", "Chestnut-crowned Antpitta", "Collared Inca", "Gray-breasted Mountain-Toucan", "Mountain Velvetbreast", "Pale-naped Brushfinch", "Pink-billed Cnemoscopus", "Rufous-crowned Tody-Flycatcher", "Scarlet-rumped Cacique", "Spectacled Redstart", "Sword-billed Hummingbird", "Andean Condor", "Andean Hillstar", "Carunculated Caracara", "Plumbeous Sierra Finch", "Shining Sunbeam", "Stout-billed Cinclodes"], "milestones": [{"milestone": 500, "species": "Andean Cock-of-the-rock", "date": "2013-12-26", "location": "Tandayapa Valley, Ecuador", "month": "2013-12"}], "trips": ["Ecuador and Galapagos 2013"], "locations": ["Tandayapa Valley, Ecuador", "San Isidro, Ecuador"]}, {"month": "2014-01", "label": "Jan 2014", "year": 2014, "new_count": 70, "cumulative": 618, "species_names": ["Ochre-bellied Flycatcher", "Palm Tanager", "Purple Honeycreeper", "Tufted Coquette", "Violaceous Euphonia", "White-lined Tanager", "White-necked Thrush", "Bay-headed Tanager", "Bearded Bellbird", "Collared Trogon", "Common Potoo", "Golden-headed Manakin", "Green-backed Trogon", "Oilbird", "Red-bellied Macaw", "Spectacled Thrush", "White-bearded Manakin", "White-bellied Antbird", "White-tailed Nightjar", "American Pygmy Kingfisher", "Carib Grackle", "Gray-lined Hawk", "Green-rumped Parrotlet", "Orange-winged Amazon", "Pinnated Bittern", "Ruddy-breasted Seedeater", "Savanna Hawk", "Smooth-billed Ani", "Southern Beardless-Tyrannulet", "Striated Heron", "Wattled Jacana", "White-headed Marsh Tyrant", "Yellow Oriole", "Yellow-chinned Spinetail", "Black-throated Mango", "Blue-chinned Sapphire", "Copper-rumped Hummingbird", "Gray-throated Leaftosser", "Long-billed Starthroat", "Masked Yellowthroat", "Pearl Kite", "Ruby-topaz Hummingbird", "Rufous-breasted Hermit", "Southern Lapwing", "Streaked Xenops", "Yellow-olive Flatbill", "Blue-headed Parrot", "Chestnut Woodpecker", "Cocoa Woodcreeper", "Golden-olive Woodpecker", "Yellow-rumped Cacique", "Bicolored Conebill", "Little Blue Heron", "Osprey", "Saffron Finch", "Scarlet Ibis", "Yellow-crowned Night Heron", "Least Grebe", "Little Egret", "Gray Kingbird", "Rufous-vented Chachalaca", "Southern White-fringed Antwren", "Stripe-breasted Spinetail", "Trinidad Motmot", "White-tipped Dove", "Brown Booby", "Brown-crested Flycatcher", "Caribbean Martin", "White-tailed Tropicbird", "Yellow-bellied Elaenia"], "milestones": [{"milestone": 600, "species": "Bicolored Conebill", "date": "2014-01-21", "location": "Asa Wright Nature Center, Port of Spain, Trinidad", "month": "2014-01"}], "trips": ["Trinidad and Tobago 2014"], "locations": ["Asa Wright Nature Center, Port of Spain, Trinidad", "Asa Wright Nature Center, Trinidad and Tobago"]}, {"month": "2014-02", "label": "Feb 2014", "year": 2014, "new_count": 1, "cumulative": 619, "species_names": ["Phainopepla"], "milestones": [], "trips": [], "locations": []}, {"month": "2014-03", "label": "Mar 2014", "year": 2014, "new_count": 0, "cumulative": 619, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2014-04", "label": "Apr 2014", "year": 2014, "new_count": 0, "cumulative": 619, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2014-05", "label": "May 2014", "year": 2014, "new_count": 2, "cumulative": 621, "species_names": ["Laysan Albatross", "Grasshopper Sparrow"], "milestones": [], "trips": [], "locations": ["Continental Shelf off Half Moon Bay, Half Moon Bay, California, USA", "Monte Bello Open Space Preserve, Palo Alto, California, USA"]}, {"month": "2014-06", "label": "Jun 2014", "year": 2014, "new_count": 0, "cumulative": 621, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2014-07", "label": "Jul 2014", "year": 2014, "new_count": 8, "cumulative": 629, "species_names": ["Sage Thrasher", "Cassin's Finch", "Gray-crowned Rosy-Finch", "Black-backed Woodpecker", "Western Tanager", "Vesper Sparrow", "Williamson's Sapsucker", "Green-tailed Towhee"], "milestones": [], "trips": [], "locations": ["California, USA", "Near Mono Lake, California, USA"]}, {"month": "2014-08", "label": "Aug 2014", "year": 2014, "new_count": 0, "cumulative": 629, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2014-09", "label": "Sep 2014", "year": 2014, "new_count": 0, "cumulative": 629, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2014-10", "label": "Oct 2014", "year": 2014, "new_count": 0, "cumulative": 629, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2014-11", "label": "Nov 2014", "year": 2014, "new_count": 1, "cumulative": 630, "species_names": ["Tundra Swan"], "milestones": [], "trips": [], "locations": ["District 10, Marysville, California, USA"]}, {"month": "2014-12", "label": "Dec 2014", "year": 2014, "new_count": 3, "cumulative": 633, "species_names": ["Cackling Goose", "Lesser Yellowlegs", "Semipalmated Plover"], "milestones": [], "trips": [], "locations": ["Drawbridge, Fremont, California, USA", "Tigertail Beach, Marco Island, Florida, USA"]}, {"month": "2015-01", "label": "Jan 2015", "year": 2015, "new_count": 1, "cumulative": 634, "species_names": ["Hermit Thrush"], "milestones": [], "trips": [], "locations": ["California, USA"]}, {"month": "2015-02", "label": "Feb 2015", "year": 2015, "new_count": 0, "cumulative": 634, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2015-03", "label": "Mar 2015", "year": 2015, "new_count": 0, "cumulative": 634, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2015-04", "label": "Apr 2015", "year": 2015, "new_count": 0, "cumulative": 634, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2015-05", "label": "May 2015", "year": 2015, "new_count": 0, "cumulative": 634, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2015-06", "label": "Jun 2015", "year": 2015, "new_count": 0, "cumulative": 634, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2015-07", "label": "Jul 2015", "year": 2015, "new_count": 0, "cumulative": 634, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2015-08", "label": "Aug 2015", "year": 2015, "new_count": 0, "cumulative": 634, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2015-09", "label": "Sep 2015", "year": 2015, "new_count": 1, "cumulative": 635, "species_names": ["Western Warbling Vireo"], "milestones": [], "trips": [], "locations": ["Ragle Ranch County Park, Sebastapol, CA, USA"]}, {"month": "2015-10", "label": "Oct 2015", "year": 2015, "new_count": 0, "cumulative": 635, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2015-11", "label": "Nov 2015", "year": 2015, "new_count": 1, "cumulative": 636, "species_names": ["Greater White-fronted Goose"], "milestones": [], "trips": [], "locations": ["Sacramento National Wildlife Refuge, Orland, California, USA"]}, {"month": "2015-12", "label": "Dec 2015", "year": 2015, "new_count": 27, "cumulative": 663, "species_names": ["Great-tailed Grackle", "Green Heron", "Social Flycatcher", "Black-collared Hawk", "Clay-colored Thrush", "Laughing Falcon", "Morelet's Seedeater", "Russet-naped Wood-Rail", "Snail Kite", "Vermilion Flycatcher", "White-eyed Vireo", "Blue-black Grassquit", "Brown Jay", "Fork-tailed Flycatcher", "Ruddy Ground Dove", "Yellow-throated Warbler", "Jabiru", "Pale-billed Woodpecker", "Yucatan Jay", "Red-lored Amazon", "Hook-billed Kite", "King Vulture", "Magnificent Frigatebird", "Black Catbird", "Northern Parula", "Yucatan Vireo", "Rufous-necked Wood-Rail"], "milestones": [], "trips": ["Belize 2015"], "locations": ["Crooked Tree, Belize, Belize", "Belize, Belize"]}, {"month": "2016-01", "label": "Jan 2016", "year": 2016, "new_count": 1, "cumulative": 664, "species_names": ["Ferruginous Hawk"], "milestones": [], "trips": [], "locations": ["Point Reyes National Seashore, Point Reyes Station, California, USA"]}, {"month": "2016-02", "label": "Feb 2016", "year": 2016, "new_count": 0, "cumulative": 664, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2016-03", "label": "Mar 2016", "year": 2016, "new_count": 0, "cumulative": 664, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2016-04", "label": "Apr 2016", "year": 2016, "new_count": 38, "cumulative": 702, "species_names": ["Yellow-rumped Warbler", "Black Scoter", "Gray Catbird", "Least Tern", "Magnolia Warbler", "Painted Bunting", "Pileated Woodpecker", "Common Nighthawk", "Florida Scrub-Jay", "Red-bellied Woodpecker", "Bachman's Sparrow", "Boat-tailed Grackle", "Double-crested Cormorant", "Eastern Meadowlark", "Monk Parakeet", "Eurasian Collared-Dove", "Least Bittern", "Piping Plover", "Reddish Egret", "Swallow-tailed Kite", "Tufted Titmouse", "Upland Sandpiper", "Black-throated Blue Warbler", "American Redstart", "Blackpoll Warbler", "Cape May Warbler", "Hooded Warbler", "Mangrove Cuckoo", "Merlin", "Ovenbird", "Prairie Warbler", "Ruddy Turnstone", "Western Cattle-Egret", "Antillean Nighthawk", "Cuban Vireo", "Muscovy Duck", "White-crowned Pigeon", "Red-cockaded Woodpecker"], "milestones": [{"milestone": 700, "species": "Muscovy Duck", "date": "2016-04-21", "location": "Key West, Florida, United States", "month": "2016-04"}], "trips": ["South Florida 2016"], "locations": ["Dry Tortugas NP, Key West, Florida, United States", "Key West, Florida, United States"]}, {"month": "2016-05", "label": "May 2016", "year": 2016, "new_count": 0, "cumulative": 702, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2016-06", "label": "Jun 2016", "year": 2016, "new_count": 1, "cumulative": 703, "species_names": ["Band-tailed Pigeon"], "milestones": [], "trips": [], "locations": ["Cupertino, California, United States"]}, {"month": "2016-07", "label": "Jul 2016", "year": 2016, "new_count": 33, "cumulative": 736, "species_names": ["Forster's Tern", "Black Solitaire", "Black-cheeked Mountain Tanager", "Flame-faced Tanager", "Glistening-green Tanager", "Golden Tanager", "Golden-naped Tanager", "Moss-backed Tanager", "Pale-legged Hornero", "Powerful Woodpecker", "Rufous-throated Tanager", "White-winged Tanager", "Blue-necked Tanager", "Broad-billed Motmot", "Brown Violetear", "Choco Toucan", "Red-headed Barbet", "Yellow-crowned Euphonia", "Western Barn Owl", "Brown Noddy", "Small Ground-Finch", "American Oystercatcher", "Espa\u00f1ola Mockingbird", "Galapagos Mockingbird", "Red-tailed Tropicbird", "Swallow-tailed Gull", "Red-footed Booby", "Galapagos Hawk", "Galapagos Shearwater", "Gray Warbler-Finch", "Kelp Gull", "Galapagos Flycatcher", "Galapagos Petrel"], "milestones": [], "trips": ["Ecuador and Galapagos 2016"], "locations": ["Ecuador", "Amagusa, Ecuador"]}, {"month": "2016-08", "label": "Aug 2016", "year": 2016, "new_count": 1, "cumulative": 737, "species_names": ["Great Gray Owl"], "milestones": [], "trips": [], "locations": ["Howard Prairie Circuit"]}, {"month": "2016-09", "label": "Sep 2016", "year": 2016, "new_count": 0, "cumulative": 737, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2016-10", "label": "Oct 2016", "year": 2016, "new_count": 0, "cumulative": 737, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2016-11", "label": "Nov 2016", "year": 2016, "new_count": 0, "cumulative": 737, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2016-12", "label": "Dec 2016", "year": 2016, "new_count": 1, "cumulative": 738, "species_names": ["Black Rosy-Finch"], "milestones": [], "trips": [], "locations": ["Cibola NF--Sandia Crest"]}, {"month": "2017-01", "label": "Jan 2017", "year": 2017, "new_count": 1, "cumulative": 739, "species_names": ["Ross's Gull"], "milestones": [], "trips": [], "locations": ["Half Moon Bay, California, USA"]}, {"month": "2017-02", "label": "Feb 2017", "year": 2017, "new_count": 0, "cumulative": 739, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2017-03", "label": "Mar 2017", "year": 2017, "new_count": 2, "cumulative": 741, "species_names": ["Tricolored Blackbird", "White-throated Swift"], "milestones": [], "trips": [], "locations": ["California, USA", "Panoche Rd., California, USA"]}, {"month": "2017-04", "label": "Apr 2017", "year": 2017, "new_count": 0, "cumulative": 741, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2017-05", "label": "May 2017", "year": 2017, "new_count": 2, "cumulative": 743, "species_names": ["Pigeon Guillemot", "Willow Flycatcher"], "milestones": [], "trips": [], "locations": ["West Cliff Dr. at Stockton Ave., California, USA", "CA, USA"]}, {"month": "2017-06", "label": "Jun 2017", "year": 2017, "new_count": 3, "cumulative": 746, "species_names": ["MacGillivray's Warbler", "Pacific Wren", "Hutton's Vireo"], "milestones": [], "trips": [], "locations": ["California, USA"]}, {"month": "2017-07", "label": "Jul 2017", "year": 2017, "new_count": 0, "cumulative": 746, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2017-08", "label": "Aug 2017", "year": 2017, "new_count": 4, "cumulative": 750, "species_names": ["Northern Shoveler", "Elegant Tern", "Rhinoceros Auklet", "Sooty Shearwater"], "milestones": [], "trips": [], "locations": ["California, USA", "Pillar Point Harbor, Half Moon Bay, California, USA"]}, {"month": "2017-09", "label": "Sep 2017", "year": 2017, "new_count": 0, "cumulative": 750, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2017-10", "label": "Oct 2017", "year": 2017, "new_count": 0, "cumulative": 750, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2017-11", "label": "Nov 2017", "year": 2017, "new_count": 2, "cumulative": 752, "species_names": ["Willet", "Ross's Goose"], "milestones": [], "trips": [], "locations": ["Arrowhead Marsh", "Willows, California, United States of America"]}, {"month": "2017-12", "label": "Dec 2017", "year": 2017, "new_count": 0, "cumulative": 752, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2018-01", "label": "Jan 2018", "year": 2018, "new_count": 0, "cumulative": 752, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2018-02", "label": "Feb 2018", "year": 2018, "new_count": 0, "cumulative": 752, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2018-03", "label": "Mar 2018", "year": 2018, "new_count": 0, "cumulative": 752, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2018-04", "label": "Apr 2018", "year": 2018, "new_count": 2, "cumulative": 754, "species_names": ["California Gull", "Caspian Tern"], "milestones": [], "trips": [], "locations": ["Palo Alto, California, United States of America"]}, {"month": "2018-05", "label": "May 2018", "year": 2018, "new_count": 3, "cumulative": 757, "species_names": ["Common Tern", "Eurasian Penduline-Tit", "Yellowhammer"], "milestones": [], "trips": [], "locations": ["Biebrza\u0144ski PN--Dobarz", "Biebrza NP--Dobarz area"]}, {"month": "2018-06", "label": "Jun 2018", "year": 2018, "new_count": 9, "cumulative": 766, "species_names": ["Black-tailed Godwit", "Brant", "Common Snipe", "European Golden-Plover", "Redwing", "Barrow's Goldeneye", "Razorbill", "Red Knot", "Whooper Swan"], "milestones": [], "trips": ["Iceland 2018"], "locations": ["Iceland", "Iceland, Iceland"]}, {"month": "2018-07", "label": "Jul 2018", "year": 2018, "new_count": 0, "cumulative": 766, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2018-08", "label": "Aug 2018", "year": 2018, "new_count": 0, "cumulative": 766, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2018-09", "label": "Sep 2018", "year": 2018, "new_count": 0, "cumulative": 766, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2018-10", "label": "Oct 2018", "year": 2018, "new_count": 0, "cumulative": 766, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2018-11", "label": "Nov 2018", "year": 2018, "new_count": 0, "cumulative": 766, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2018-12", "label": "Dec 2018", "year": 2018, "new_count": 0, "cumulative": 766, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2019-01", "label": "Jan 2019", "year": 2019, "new_count": 2, "cumulative": 768, "species_names": ["Northern Harrier", "Swamp Sparrow"], "milestones": [], "trips": [], "locations": ["San Jose, California, United States", "North San Jose, Alviso, California, United States of America"]}, {"month": "2019-02", "label": "Feb 2019", "year": 2019, "new_count": 0, "cumulative": 768, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2019-03", "label": "Mar 2019", "year": 2019, "new_count": 0, "cumulative": 768, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2019-04", "label": "Apr 2019", "year": 2019, "new_count": 1, "cumulative": 769, "species_names": ["Lark Sparrow"], "milestones": [], "trips": [], "locations": ["Stile Ranch Trail, San Jose, California, USA"]}, {"month": "2019-05", "label": "May 2019", "year": 2019, "new_count": 2, "cumulative": 771, "species_names": ["Chestnut-backed Chickadee", "Cooper's Hawk"], "milestones": [], "trips": [], "locations": ["McClellan Ranch, Cupertino, California, USA", "New Mexico, USA"]}, {"month": "2019-06", "label": "Jun 2019", "year": 2019, "new_count": 42, "cumulative": 813, "species_names": ["Aplomado Falcon", "Least Seedsnipe", "Slender-billed Finch", "Variable Hawk", "Andean Goose", "Black-hooded Sierra Finch", "Cream-winged Cinclodes", "Diademed Sandpiper-Plover", "Giant Coot", "Horned Coot", "Mountain Parakeet", "Puna Teal", "Red-backed Sierra Finch", "Straight-billed Earthcreeper", "Andean Avocet", "Andean Flamingo", "Andean Negrito", "Puna Miner", "Puna Plover", "Belcher's Gull", "Inca Tern", "Northern Giant-Petrel", "Peruvian Booby", "Red-legged Cormorant", "Fire-eyed Diucon", "Mourning Sierra Finch", "Patagonian Tyrant", "Dark-faced Ground-Tyrant", "Northern Royal Albatross", "Salvin's Albatross", "Seaside Cinclodes", "White-chinned Petrel", "Dusky-tailed Canastero", "Green-backed Firecrown", "Lake Duck", "Red-fronted Coot", "Silvery Grebe", "Spot-flanked Gallinule", "White-throated Tapaculo", "White-tufted Grebe", "Long-tailed Meadowlark", "Many-colored Rush Tyrant"], "milestones": [{"milestone": 800, "species": "Northern Royal Albatross", "date": "2019-06-28", "location": "Chile", "month": "2019-06"}], "trips": ["Chile 2019"], "locations": ["Chile", "Dumu\u00f1o, Quintero, Valpara\u00edso, Chile"]}, {"month": "2019-07", "label": "Jul 2019", "year": 2019, "new_count": 4, "cumulative": 817, "species_names": ["Black-necked Swan", "Diuca Finch", "Red-gartered Coot", "Rufous-chested Dotterel"], "milestones": [], "trips": ["Chile 2019"], "locations": ["El Tangue, Coquimbo, Coquimbo, Chile", "Guanaqueros, Coquimbo, Coquimbo, Chile"]}, {"month": "2019-08", "label": "Aug 2019", "year": 2019, "new_count": 0, "cumulative": 817, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2019-09", "label": "Sep 2019", "year": 2019, "new_count": 0, "cumulative": 817, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2019-10", "label": "Oct 2019", "year": 2019, "new_count": 0, "cumulative": 817, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2019-11", "label": "Nov 2019", "year": 2019, "new_count": 1, "cumulative": 818, "species_names": ["Wilson's Snipe"], "milestones": [], "trips": [], "locations": ["Merced, California, United States"]}, {"month": "2019-12", "label": "Dec 2019", "year": 2019, "new_count": 0, "cumulative": 818, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2020-01", "label": "Jan 2020", "year": 2020, "new_count": 2, "cumulative": 820, "species_names": ["Northern Mockingbird", "Bald Eagle"], "milestones": [], "trips": [], "locations": ["Gridley, California, United States", "Willows, California, United States"]}, {"month": "2020-02", "label": "Feb 2020", "year": 2020, "new_count": 0, "cumulative": 820, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2020-03", "label": "Mar 2020", "year": 2020, "new_count": 0, "cumulative": 820, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2020-04", "label": "Apr 2020", "year": 2020, "new_count": 0, "cumulative": 820, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2020-05", "label": "May 2020", "year": 2020, "new_count": 0, "cumulative": 820, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2020-06", "label": "Jun 2020", "year": 2020, "new_count": 1, "cumulative": 821, "species_names": ["Mountain Chickadee"], "milestones": [], "trips": [], "locations": ["Lundy Canyon Campground"]}, {"month": "2020-07", "label": "Jul 2020", "year": 2020, "new_count": 0, "cumulative": 821, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2020-08", "label": "Aug 2020", "year": 2020, "new_count": 0, "cumulative": 821, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2020-09", "label": "Sep 2020", "year": 2020, "new_count": 0, "cumulative": 821, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2020-10", "label": "Oct 2020", "year": 2020, "new_count": 1, "cumulative": 822, "species_names": ["White-headed Woodpecker"], "milestones": [], "trips": [], "locations": ["Shingletown, California, United States"]}, {"month": "2020-11", "label": "Nov 2020", "year": 2020, "new_count": 0, "cumulative": 822, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2020-12", "label": "Dec 2020", "year": 2020, "new_count": 0, "cumulative": 822, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2021-01", "label": "Jan 2021", "year": 2021, "new_count": 0, "cumulative": 822, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2021-02", "label": "Feb 2021", "year": 2021, "new_count": 0, "cumulative": 822, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2021-03", "label": "Mar 2021", "year": 2021, "new_count": 0, "cumulative": 822, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2021-04", "label": "Apr 2021", "year": 2021, "new_count": 0, "cumulative": 822, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2021-05", "label": "May 2021", "year": 2021, "new_count": 1, "cumulative": 823, "species_names": ["Gadwall"], "milestones": [], "trips": [], "locations": ["Palo Alto Duck Pond, Palo Alto, California, USA"]}, {"month": "2021-06", "label": "Jun 2021", "year": 2021, "new_count": 1, "cumulative": 824, "species_names": ["Bell's Sparrow"], "milestones": [], "trips": [], "locations": []}, {"month": "2021-07", "label": "Jul 2021", "year": 2021, "new_count": 0, "cumulative": 824, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2021-08", "label": "Aug 2021", "year": 2021, "new_count": 1, "cumulative": 825, "species_names": ["Scripps's Murrelet"], "milestones": [], "trips": [], "locations": ["Half Moon Bay, California, USA"]}, {"month": "2021-09", "label": "Sep 2021", "year": 2021, "new_count": 0, "cumulative": 825, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2021-10", "label": "Oct 2021", "year": 2021, "new_count": 0, "cumulative": 825, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2021-11", "label": "Nov 2021", "year": 2021, "new_count": 0, "cumulative": 825, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2021-12", "label": "Dec 2021", "year": 2021, "new_count": 0, "cumulative": 825, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2022-01", "label": "Jan 2022", "year": 2022, "new_count": 0, "cumulative": 825, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2022-02", "label": "Feb 2022", "year": 2022, "new_count": 0, "cumulative": 825, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2022-03", "label": "Mar 2022", "year": 2022, "new_count": 0, "cumulative": 825, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2022-04", "label": "Apr 2022", "year": 2022, "new_count": 0, "cumulative": 825, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2022-05", "label": "May 2022", "year": 2022, "new_count": 0, "cumulative": 825, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2022-06", "label": "Jun 2022", "year": 2022, "new_count": 0, "cumulative": 825, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2022-07", "label": "Jul 2022", "year": 2022, "new_count": 0, "cumulative": 825, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2022-08", "label": "Aug 2022", "year": 2022, "new_count": 0, "cumulative": 825, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2022-09", "label": "Sep 2022", "year": 2022, "new_count": 0, "cumulative": 825, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2022-10", "label": "Oct 2022", "year": 2022, "new_count": 0, "cumulative": 825, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2022-11", "label": "Nov 2022", "year": 2022, "new_count": 55, "cumulative": 880, "species_names": ["Austral Negrito", "Buff-winged Cinclodes", "Dolphin Gull", "Patagonian Sierra Finch", "Rufous-collared Sparrow", "Upland Goose", "Ashy-headed Goose", "Austral Thrush", "Black-faced Ibis", "Chimango Caracara", "Magellanic Woodpecker", "Thorn-tailed Rayadito", "Black-chested Buzzard-Eagle", "Black-chinned Siskin", "Ochre-naped Ground-Tyrant", "Red Shoveler", "White-throated Caracara", "Yellow-billed Pintail", "Yellow-bridled Finch", "Gray-headed Albatross", "Pintado Petrel", "Southern Giant-Petrel", "Black-browed Albatross", "Brown Skua", "Correndera Pipit", "Falkland Steamer-Duck", "Gentoo Penguin", "Grass Wren", "Kelp Goose", "Long-tailed Mockingbird", "Magellanic Oystercatcher", "Magellanic Penguin", "Ruddy-headed Goose", "Striated Caracara", "Western Rockhopper Penguin", "White-bridled Finch", "Atlantic Petrel", "Southern Royal Albatross", "Antarctic Prion", "Imperial Cormorant", "King Penguin", "Snowy Sheathbill", "Yellow-billed Teal", "South Georgia Pipit", "Snow Petrel", "Chinstrap Penguin", "Light-mantled Albatross", "Sooty Albatross", "Southern Fulmar", "Antarctic Petrel", "Emperor Penguin", "Adelie Penguin", "Wilson's Storm-Petrel", "Macaroni Penguin", "Magellanic Snipe"], "milestones": [], "trips": ["Antarctica 2022"], "locations": ["Ushuaia, Argentina", "Carcass Island, Ushuaia To Falklands, Argentina"]}, {"month": "2022-12", "label": "Dec 2022", "year": 2022, "new_count": 0, "cumulative": 880, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2023-01", "label": "Jan 2023", "year": 2023, "new_count": 0, "cumulative": 880, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2023-02", "label": "Feb 2023", "year": 2023, "new_count": 0, "cumulative": 880, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2023-03", "label": "Mar 2023", "year": 2023, "new_count": 0, "cumulative": 880, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2023-04", "label": "Apr 2023", "year": 2023, "new_count": 0, "cumulative": 880, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2023-05", "label": "May 2023", "year": 2023, "new_count": 0, "cumulative": 880, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2023-06", "label": "Jun 2023", "year": 2023, "new_count": 0, "cumulative": 880, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2023-07", "label": "Jul 2023", "year": 2023, "new_count": 0, "cumulative": 880, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2023-08", "label": "Aug 2023", "year": 2023, "new_count": 0, "cumulative": 880, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2023-09", "label": "Sep 2023", "year": 2023, "new_count": 0, "cumulative": 880, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2023-10", "label": "Oct 2023", "year": 2023, "new_count": 0, "cumulative": 880, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2023-11", "label": "Nov 2023", "year": 2023, "new_count": 0, "cumulative": 880, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2023-12", "label": "Dec 2023", "year": 2023, "new_count": 0, "cumulative": 880, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2024-01", "label": "Jan 2024", "year": 2024, "new_count": 0, "cumulative": 880, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2024-02", "label": "Feb 2024", "year": 2024, "new_count": 46, "cumulative": 926, "species_names": ["Asian Koel", "Black-winged Stilt", "Brahminy Kite", "Little Tern", "Oriental Pratincole", "Painted Stork", "Red-wattled Lapwing", "Spoon-billed Sandpiper", "Asian Emerald Dove", "Bar-backed Partridge", "Black-crested Bulbul", "Black-naped Monarch", "Brown Boobook", "Common Flameback", "Greater Flameback", "Kalij Pheasant", "Large Scimitar-Babbler", "Lesser Necklaced Laughingthrush", "Orange-breasted Trogon", "Red Junglefowl", "Siberian Blue Robin", "White-browed Scimitar-Babbler", "White-crested Laughingthrush", "White-fronted Scops-Owl", "Ashy Drongo", "Black Hornbill", "Checker-throated Woodpecker", "Ratchet-tailed Treepie", "Red-bearded Bee-eater", "Silver-breasted Broadbill", "White-browed Piculet", "Asian Fairy-bluebird", "Black-and-red Broadbill", "Black-naped Oriole", "Blue-winged Leafbird", "Greater Racket-tailed Drongo", "Lineated Barbet", "Spotted Owlet", "Indian White-eye", "Indochinese Blue Flycatcher", "Tickell's Blue Flycatcher", "Long-tailed Broadbill", "Red-headed Trogon", "Sooty-headed Bulbul", "Rusty-cheeked Hornbill", "Thick-billed Green-Pigeon"], "milestones": [{"milestone": 900, "species": "Red Junglefowl", "date": "2024-02-20", "location": "Thailand", "month": "2024-02"}], "trips": ["Thailand 2024"], "locations": ["Thailand"]}, {"month": "2024-03", "label": "Mar 2024", "year": 2024, "new_count": 0, "cumulative": 926, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2024-04", "label": "Apr 2024", "year": 2024, "new_count": 0, "cumulative": 926, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2024-05", "label": "May 2024", "year": 2024, "new_count": 0, "cumulative": 926, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2024-06", "label": "Jun 2024", "year": 2024, "new_count": 1, "cumulative": 927, "species_names": ["Cassin's Vireo"], "milestones": [], "trips": [], "locations": ["Blairsden Graeagle, California, United States"]}, {"month": "2024-07", "label": "Jul 2024", "year": 2024, "new_count": 0, "cumulative": 927, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2024-08", "label": "Aug 2024", "year": 2024, "new_count": 0, "cumulative": 927, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2024-09", "label": "Sep 2024", "year": 2024, "new_count": 0, "cumulative": 927, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2024-10", "label": "Oct 2024", "year": 2024, "new_count": 0, "cumulative": 927, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2024-11", "label": "Nov 2024", "year": 2024, "new_count": 0, "cumulative": 927, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2024-12", "label": "Dec 2024", "year": 2024, "new_count": 34, "cumulative": 961, "species_names": ["Common Chaffinch", "Silvereye", "Dunnock", "New Zealand Fantail", "New Zealand Pigeon", "Paradise Shelduck", "Song Thrush", "Tui", "Antarctic Tern", "Silver Gull", "Snares Penguin", "Tomtit", "Auckland Islands Shag", "Auckland Islands Teal", "New Zealand Pipit", "Red-crowned Parakeet", "White-capped Albatross", "White-headed Petrel", "Yellow-eyed Penguin", "Gray-backed Storm-Petrel", "Royal Penguin", "Soft-plumaged Petrel", "Buller's Albatross", "Campbell Islands Teal", "Antipodean Albatross", "Erect-crested Penguin", "Reischek's Parakeet", "Bounty Islands Shag", "Indian Yellow-nosed Albatross", "Pitt Island Shag", "Shore Plover", "White-fronted Tern", "Magenta Petrel", "Mottled Petrel"], "milestones": [], "trips": [], "locations": ["New Zealand", "Queenstown, Otago, New Zealand"]}, {"month": "2025-01", "label": "Jan 2025", "year": 2025, "new_count": 0, "cumulative": 961, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2025-02", "label": "Feb 2025", "year": 2025, "new_count": 0, "cumulative": 961, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2025-03", "label": "Mar 2025", "year": 2025, "new_count": 0, "cumulative": 961, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2025-04", "label": "Apr 2025", "year": 2025, "new_count": 0, "cumulative": 961, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2025-05", "label": "May 2025", "year": 2025, "new_count": 1, "cumulative": 962, "species_names": ["Canada Warbler"], "milestones": [], "trips": [], "locations": []}, {"month": "2025-06", "label": "Jun 2025", "year": 2025, "new_count": 8, "cumulative": 970, "species_names": ["Barnacle Goose", "Thick-billed Murre", "King Eider", "Parasitic Jaeger", "Purple Sandpiper", "Ivory Gull", "Pomarine Jaeger", "Pink-footed Goose"], "milestones": [], "trips": ["Spitzbergen"], "locations": ["Diabasodden", "Svalbard, Svalbard and Jan Mayen"]}, {"month": "2025-07", "label": "Jul 2025", "year": 2025, "new_count": 0, "cumulative": 970, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2025-08", "label": "Aug 2025", "year": 2025, "new_count": 0, "cumulative": 970, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2025-09", "label": "Sep 2025", "year": 2025, "new_count": 0, "cumulative": 970, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2025-10", "label": "Oct 2025", "year": 2025, "new_count": 0, "cumulative": 970, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2025-11", "label": "Nov 2025", "year": 2025, "new_count": 0, "cumulative": 970, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2025-12", "label": "Dec 2025", "year": 2025, "new_count": 0, "cumulative": 970, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2026-01", "label": "Jan 2026", "year": 2026, "new_count": 0, "cumulative": 970, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2026-02", "label": "Feb 2026", "year": 2026, "new_count": 0, "cumulative": 970, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2026-03", "label": "Mar 2026", "year": 2026, "new_count": 42, "cumulative": 1012, "species_names": ["Chilean Tinamou", "Gray Noddy", "Henderson Petrel", "Kermadec Petrel", "Brown Cacholote", "Chaco Earthcreeper", "Chalk-browed Mockingbird", "Golden-billed Saltator", "Spot-winged Pigeon", "Rufous Hornero", "Black-billed Shrike-Tyrant", "Gray-flanked Cinclodes", "Gray-hooded Sierra Finch", "Greater Yellow-Finch", "Black-fronted Ground-Tyrant", "Steinbach's Canastero", "Chiloe Wigeon", "Great Grebe", "Rosy-billed Pochard", "Stripe-crowned Spinetail", "Burrowing Parakeet", "Chiguanco Thrush", "Chilean Flamingo", "Common Miner", "Coscoroba Swan", "Patagonian Canastero", "Ticking Doradito", "Andean Gull", "Rufous-crowned Sparrow", "Sandy Gallito", "Sharp-billed Canastero", "Austral Pygmy-Owl", "Rufous-legged Owl", "Tufted Tit-Tyrant", "White-throated Earthcreeper", "Plumbeous Rail", "Crag Chilia", "Creamy-rumped Miner", "Magellanic Tapaculo", "Moustached Turca", "Juan Fernandez Petrel", "Westland Petrel"], "milestones": [{"milestone": 1000, "species": "Sandy Gallito", "date": "2026-03-13", "location": "Unknown Location", "month": "2026-03"}], "trips": ["Chile and Argentina 2026"], "locations": ["Rapa Nui, Chile", "Cacheuta, Mendoza, Argentina"]}, {"month": "2026-04", "label": "Apr 2026", "year": 2026, "new_count": 0, "cumulative": 1012, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2026-05", "label": "May 2026", "year": 2026, "new_count": 0, "cumulative": 1012, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2026-06", "label": "Jun 2026", "year": 2026, "new_count": 0, "cumulative": 1012, "species_names": [], "milestones": [], "trips": [], "locations": []}, {"month": "2026-07", "label": "Jul 2026", "year": 2026, "new_count": 2, "cumulative": 1014, "species_names": ["Black Storm-Petrel", "Cook's Petrel"], "milestones": [{"milestone": 1014, "species": "Cook's Petrel", "date": "2026-07-05", "location": "Unknown Location", "month": "2026-07"}], "trips": [], "locations": ["Half Moon Bay, California, United States"]}];
-        const summaryData = {"total_species": 1014, "first_photo": {"name": "Trumpeter Swan", "date": "2003-11-08", "location": "Upper Mississippi NWR", "url": "https://www.birdwalker.com/General/i-27BNVqq", "photo_count": 1}, "latest_photo": {"name": "Cook's Petrel", "date": "2026-07-05", "location": "Unknown Location", "url": "https://www.birdwalker.com/General/i-LZqTpCR", "photo_count": 2}, "total_months": 273, "milestones": [{"milestone": 1, "species": "Trumpeter Swan", "date": "2003-11-08", "location": "Upper Mississippi NWR", "month": "2003-11"}, {"milestone": 100, "species": "American Bittern", "date": "2008-01-27", "location": "Viera Wetlands, Viera, Florida, USA", "month": "2008-01"}, {"milestone": 200, "species": "Wood Duck", "date": "2010-01-08", "location": "Union City Library, Union City, California, USA", "month": "2010-01"}, {"milestone": 300, "species": "Wrentit", "date": "2012-02-03", "location": "No State, USA", "month": "2012-02"}, {"milestone": 400, "species": "Mealy Amazon", "date": "2012-03-01", "location": "El Cafetal Inn, No State, Costa Rica", "month": "2012-03"}, {"milestone": 500, "species": "Andean Cock-of-the-rock", "date": "2013-12-26", "location": "Tandayapa Valley, Ecuador", "month": "2013-12"}, {"milestone": 600, "species": "Bicolored Conebill", "date": "2014-01-21", "location": "Asa Wright Nature Center, Port of Spain, Trinidad", "month": "2014-01"}, {"milestone": 700, "species": "Muscovy Duck", "date": "2016-04-21", "location": "Key West, Florida, United States", "month": "2016-04"}, {"milestone": 800, "species": "Northern Royal Albatross", "date": "2019-06-28", "location": "Chile", "month": "2019-06"}, {"milestone": 900, "species": "Red Junglefowl", "date": "2024-02-20", "location": "Thailand", "month": "2024-02"}, {"milestone": 1000, "species": "Sandy Gallito", "date": "2026-03-13", "location": "Unknown Location", "month": "2026-03"}, {"milestone": 1014, "species": "Cook's Petrel", "date": "2026-07-05", "location": "Unknown Location", "month": "2026-07"}]};
+        const rawSummary = {"total_species": 1014, "first_photo": {"name": "Trumpeter Swan", "date": "2003-11-08", "location": "Upper Mississippi NWR", "url": "https://www.birdwalker.com/General/i-27BNVqq", "photo_count": 1}, "latest_photo": {"name": "Cook's Petrel", "date": "2026-07-05", "location": "Unknown Location", "url": "https://www.birdwalker.com/General/i-LZqTpCR", "photo_count": 2}, "total_months": 273, "milestones": [{"milestone": 1, "species": "Trumpeter Swan", "date": "2003-11-08", "location": "Upper Mississippi NWR", "month": "2003-11"}, {"milestone": 100, "species": "American Bittern", "date": "2008-01-27", "location": "Viera Wetlands, Viera, Florida, USA", "month": "2008-01"}, {"milestone": 200, "species": "Wood Duck", "date": "2010-01-08", "location": "Union City Library, Union City, California, USA", "month": "2010-01"}, {"milestone": 300, "species": "Wrentit", "date": "2012-02-03", "location": "No State, USA", "month": "2012-02"}, {"milestone": 400, "species": "Mealy Amazon", "date": "2012-03-01", "location": "El Cafetal Inn, No State, Costa Rica", "month": "2012-03"}, {"milestone": 500, "species": "Andean Cock-of-the-rock", "date": "2013-12-26", "location": "Tandayapa Valley, Ecuador", "month": "2013-12"}, {"milestone": 600, "species": "Bicolored Conebill", "date": "2014-01-21", "location": "Asa Wright Nature Center, Port of Spain, Trinidad", "month": "2014-01"}, {"milestone": 700, "species": "Muscovy Duck", "date": "2016-04-21", "location": "Key West, Florida, United States", "month": "2016-04"}, {"milestone": 800, "species": "Northern Royal Albatross", "date": "2019-06-28", "location": "Chile", "month": "2019-06"}, {"milestone": 900, "species": "Red Junglefowl", "date": "2024-02-20", "location": "Thailand", "month": "2024-02"}, {"milestone": 1000, "species": "Sandy Gallito", "date": "2026-03-13", "location": "Unknown Location", "month": "2026-03"}, {"milestone": 1014, "species": "Cook's Petrel", "date": "2026-07-05", "location": "Unknown Location", "month": "2026-07"}]};
 
-        let currentRange = 'all';
-        let currentMode = 'both';
-        let chartInstance = null;
+        // Prepare chart data
+        const labels = rawTimeline.map(item => item.label);
+        const cumulativeData = rawTimeline.map(item => item.cumulative);
+        const monthlyData = rawTimeline.map(item => item.new_count);
 
-        function getFilteredData() {
-            if (currentRange === 'all') return rawTimeline;
-            const monthsCount = currentRange * 12;
-            return rawTimeline.slice(-monthsCount);
-        }
+        // Chart implementation
+        const ctx = document.getElementById('growthChart').getContext('2d');
+        
+        // Define gradient
+        const chartGrad = ctx.createLinearGradient(0, 0, 0, 300);
+        chartGrad.addColorStop(0, 'rgba(255, 159, 67, 0.4)');
+        chartGrad.addColorStop(1, 'rgba(255, 159, 67, 0.0)');
 
-        function initChart() {
-            const ctx = document.getElementById('growthChart').getContext('2d');
-            const data = getFilteredData();
-
-            const labels = data.map(d => d.label);
-            const cumulativeData = data.map(d => d.cumulative);
-            const monthlyData = data.map(d => d.new_count);
-
-            const gradient = ctx.createLinearGradient(0, 0, 0, 450);
-            gradient.addColorStop(0, 'rgba(255, 159, 67, 0.45)');
-            gradient.addColorStop(1, 'rgba(255, 159, 67, 0.0)');
-
-            const datasets = [];
-
-            if (currentMode === 'both' || currentMode === 'cumulative') {
-                datasets.push({
-                    type: 'line',
-                    label: 'Cumulative Species',
-                    data: cumulativeData,
-                    borderColor: '#ff9f43',
-                    backgroundColor: gradient,
-                    borderWidth: 2.5,
-                    fill: true,
-                    tension: 0.25,
-                    pointRadius: data.length > 120 ? 0 : 2,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: '#ff9f43',
-                    yAxisID: 'y'
-                });
-            }
-
-            if (currentMode === 'both' || currentMode === 'monthly') {
-                datasets.push({
-                    type: 'bar',
-                    label: 'New Species Added',
-                    data: monthlyData,
-                    backgroundColor: 'rgba(72, 219, 251, 0.65)',
-                    hoverBackgroundColor: '#48dbfb',
-                    borderRadius: 3,
-                    yAxisID: currentMode === 'both' ? 'y1' : 'y'
-                });
-            }
-
-            const scales = {
-                x: {
-                    grid: { color: '#222736' },
-                    ticks: { 
-                        color: '#8e99ac',
-                        maxRotation: 45,
-                        autoSkip: true,
-                        maxTicksLimit: 20
+        const growthChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Total Species (Cumulative)',
+                        data: cumulativeData,
+                        borderColor: '#ff9f43',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ff9f43',
+                        pointBorderColor: '#0f1117',
+                        pointBorderWidth: 1.5,
+                        pointRadius: function(context) {
+                            const idx = context.dataIndex;
+                            if (idx === undefined || idx < 0) return 2;
+                            const item = rawTimeline[idx];
+                            return (item.milestones && item.milestones.length > 0) ? 6 : 2;
+                        },
+                        pointHoverRadius: 8,
+                        pointHitRadius: 10,
+                        fill: true,
+                        backgroundColor: chartGrad,
+                        tension: 0.1,
+                        yAxisID: 'y'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                onClick: (event, activeElements) => {
+                    if (activeElements && activeElements.length > 0) {
+                        const idx = activeElements[0].index;
+                        showMonthDetails(idx);
                     }
                 },
-                y: {
-                    position: 'left',
-                    grid: { color: '#222736' },
-                    ticks: { color: '#8e99ac' },
-                    title: {
-                        display: true,
-                        text: 'Cumulative Species Total',
-                        color: '#8e99ac'
-                    }
-                }
-            };
-
-            if (currentMode === 'both') {
-                scales.y1 = {
-                    position: 'right',
-                    grid: { drawOnChartArea: false },
-                    ticks: { color: '#48dbfb' },
-                    title: {
-                        display: true,
-                        text: 'New Species / Month',
-                        color: '#48dbfb'
-                    }
-                };
-            }
-
-            chartInstance = new Chart(ctx, {
-                data: { labels, datasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
+                plugins: {
+                    legend: {
+                        display: false
                     },
-                    plugins: {
-                        legend: {
-                            labels: { color: '#f0f3f8', font: { size: 12 } }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(24, 27, 36, 0.95)',
-                            titleColor: '#fff',
-                            bodyColor: '#f0f3f8',
-                            borderColor: '#384152',
-                            borderWidth: 1,
-                            padding: 12,
-                            boxPadding: 6,
-                            callbacks: {
-                                afterBody: function(context) {
-                                    const idx = context[0].dataIndex;
-                                    const item = getFilteredData()[idx];
-                                    if (item.new_count > 0) {
-                                        const names = item.species_names;
-                                        const preview = names.slice(0, 5).join(', ');
-                                        const extra = names.length > 5 ? ` +${names.length - 5} more` : '';
-                                        return `\nAdded in this month:\n• ${preview}${extra}`;
-                                    }
-                                    return '';
+                    tooltip: {
+                        backgroundColor: '#161a25',
+                        titleColor: '#fff',
+                        bodyColor: '#e2e8f0',
+                        borderColor: '#262b38',
+                        borderWidth: 1,
+                        padding: 12,
+                        callbacks: {
+                            title: function(context) {
+                                return rawTimeline[context[0].dataIndex].label;
+                            },
+                            label: function(context) {
+                                const idx = context.dataIndex;
+                                const item = rawTimeline[idx];
+                                let lines = [`Total: ${context.raw} species`];
+                                if (item.new_count > 0) {
+                                    lines.push(`Added +${item.new_count} in this month`);
                                 }
+                                if (item.milestones && item.milestones.length > 0) {
+                                    item.milestones.forEach(m => {
+                                        lines.push(`🏆 MILESTONE: #${m.milestone}!`);
+                                    });
+                                }
+                                return lines;
                             }
                         }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: '#222736',
+                            drawOnChartArea: true
+                        },
+                        ticks: {
+                            color: '#8e99ac',
+                            maxTicksLimit: 20
+                        }
                     },
-                    scales: scales
+                    y: {
+                        grid: {
+                            color: '#222736',
+                            drawOnChartArea: true
+                        },
+                        ticks: {
+                            color: '#8e99ac'
+                        },
+                        position: 'left'
+                    }
                 }
-            });
-        }
+            }
+        });
 
-        function setTimeRange(range) {
-            currentRange = range;
-            document.querySelectorAll('.chart-controls button[id^="btn-"]').forEach(btn => {
-                if (['btn-all', 'btn-10y', 'btn-5y'].includes(btn.id)) {
-                    btn.classList.remove('active');
-                }
-            });
-            if (range === 'all') document.getElementById('btn-all').classList.add('active');
-            if (range === 10) document.getElementById('btn-10y').classList.add('active');
-            if (range === 5) document.getElementById('btn-5y').classList.add('active');
+        // Sidebar detail management
+        function showMonthDetails(idx) {
+            const item = rawTimeline[idx];
+            
+            document.getElementById('panel-placeholder').style.display = 'none';
+            document.getElementById('panel-content-body').style.display = 'flex';
 
-            if (chartInstance) chartInstance.destroy();
-            initChart();
-        }
-
-        function setChartMode(mode) {
-            currentMode = mode;
-            document.querySelectorAll('.chart-controls button[id^="btn-"]').forEach(btn => {
-                if (['btn-cumulative', 'btn-cum-only', 'btn-monthly-only'].includes(btn.id)) {
-                    btn.classList.remove('active');
-                }
-            });
-            if (mode === 'both') document.getElementById('btn-cumulative').classList.add('active');
-            if (mode === 'cumulative') document.getElementById('btn-cum-only').classList.add('active');
-            if (mode === 'monthly') document.getElementById('btn-monthly-only').classList.add('active');
-
-            if (chartInstance) chartInstance.destroy();
-            initChart();
-        }
-
-        function populateDetails() {
-            // Top Surges
-            const topSurges = [...rawTimeline].sort((a, b) => b.new_count - a.new_count).slice(0, 10);
-            const sortedSurges = topSurges.sort((a, b) => b.month.localeCompare(a.month));
-            const surgeContainer = document.getElementById('surge-list-container');
-            surgeContainer.innerHTML = sortedSurges.map((s, idx) => {
-                let tripHtml = '';
-                if (s.trips && s.trips.length > 0) {
-                    tripHtml = `<span class="item-sub" style="color: var(--accent-blue); font-weight: 500; margin-top: 3.5px;">✈️ ${s.trips.join(', ')}</span>`;
-                } else if (s.locations && s.locations.length > 0) {
-                    tripHtml = `<span class="item-sub" style="color: var(--accent-green); margin-top: 3.5px;">📍 ${s.locations.slice(0, 1).join(', ')}</span>`;
-                }
-                return `
-                    <li class="surge-item">
-                        <div class="item-main">
-                            <span class="item-title">${s.label}</span>
-                            <span class="item-sub">${s.species_names.slice(0, 3).join(', ')}${s.species_names.length > 3 ? '...' : ''}</span>
-                            ${tripHtml}
-                        </div>
-                        <div class="item-right">
-                            <span class="badge badge-orange">+${s.new_count} species</span>
-                            <div class="item-sub" style="margin-top: 2px;">Total: ${s.cumulative}</div>
-                        </div>
-                    </li>
-                `;
-            }).join('');
+            document.getElementById('panel-month-label').innerText = item.label;
+            document.getElementById('panel-month-sub').innerText = `Growth summary for month`;
+            document.getElementById('panel-new-count').innerText = `+${item.new_count}`;
+            document.getElementById('panel-cum-count').innerText = item.cumulative;
 
             // Milestones
-            const milestoneContainer = document.getElementById('milestone-list-container');
-            const keyMilestones = summaryData.milestones.filter(m => m.milestone % 100 === 0);
-            milestoneContainer.innerHTML = keyMilestones.map(m => `
-                <li class="milestone-item">
-                    <div class="item-main">
-                        <span class="item-title">${m.species}</span>
-                        <span class="item-sub">${m.location} (${m.date})</span>
-                    </div>
-                    <div class="item-right">
-                        <span class="badge badge-green">#${m.milestone}</span>
-                    </div>
-                </li>
-            `).join('');
+            const milestoneContainer = document.getElementById('panel-milestone-container');
+            milestoneContainer.innerHTML = '';
+            if (item.milestones && item.milestones.length > 0) {
+                item.milestones.forEach(m => {
+                    milestoneContainer.innerHTML += `
+                        <div class="milestone-alert">
+                            <div class="medal">🏆</div>
+                            <div class="msg">
+                                Crossed Milestone <strong>#${m.milestone}</strong>!<br/>
+                                <strong>${m.species}</strong> on ${m.date} at ${m.location}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // Trip details
+            const tripContainer = document.getElementById('panel-trip-container');
+            tripContainer.innerHTML = '';
+            if (item.trips && item.trips.length > 0) {
+                tripContainer.innerHTML += `<h5>🚗 Associated Trips / Galleries:</h5>`;
+                item.trips.forEach(t => {
+                    tripContainer.innerHTML += `<span class="trip-tag" style="margin-right: 6px;">${t}</span>`;
+                });
+            }
+
+            // Species list
+            const listHeader = document.getElementById('panel-list-header');
+            const speciesList = document.getElementById('panel-species-list');
+            speciesList.innerHTML = '';
+            if (item.species_names && item.species_names.length > 0) {
+                listHeader.innerText = `Species Added (${item.new_count})`;
+                item.species_names.forEach(name => {
+                    const url_name = name.replace(" ", "+");
+                    speciesList.innerHTML += `<li><a href="/search/?q=${url_name}" target="_blank">${name}</a></li>`;
+                });
+            } else {
+                listHeader.innerText = 'Species Added';
+                speciesList.innerHTML = '<li style="color: var(--text-muted); font-style: italic;">No new species photographed this month</li>';
+            }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            initChart();
-            populateDetails();
-        });
+        // Populate Milestone Timeline
+        function initMilestones() {
+            const list = document.getElementById('milestones-timeline-list');
+            const highlightMilestones = [1, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, rawSummary.total_species];
+            const uniqueHighlights = [...new Set(highlightMilestones)].sort((a,b) => a-b);
+            
+            rawSummary.milestones.forEach(m => {
+                if (uniqueHighlights.includes(m.milestone)) {
+                    const card = document.createElement('div');
+                    card.className = 'stat-card';
+                    card.style.cursor = 'pointer';
+                    card.style.borderColor = 'rgba(255,159,67,0.3)';
+                    card.style.position = 'relative';
+                    card.onclick = () => {
+                        // Find matching index in rawTimeline
+                        const tIdx = rawTimeline.findIndex(t => t.month === m.month);
+                        if (tIdx !== -1) {
+                            showMonthDetails(tIdx);
+                            // Highlight the element in chart
+                            growthChart.setActiveElements([{ datasetIndex: 0, index: tIdx }]);
+                            growthChart.update();
+                        }
+                    };
+
+                    card.innerHTML = `
+                        <div class="value" style="font-size: 1.3em; color: var(--accent); display: flex; align-items: center; justify-content: space-between;">
+                            <span>#${m.milestone} Sighting</span>
+                            <span style="font-size: 0.7em; color: var(--text-muted); font-weight: normal;">${m.month}</span>
+                        </div>
+                        <div class="value" style="font-size: 1.15em; color: #fff; margin-top: 5px;">${m.species}</div>
+                        <div class="desc" style="font-size: 0.8em; margin-top: 4px;">Captured ${m.date} @ ${m.location}</div>
+                    `;
+                    list.appendChild(card);
+                }
+            });
+        }
+
+        initMilestones();
     </script>
 </body>
 </html>

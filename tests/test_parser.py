@@ -1,9 +1,12 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unittest
 import os
 import tempfile
 import json
 import csv
-from dashboard_parser import (
+from lib.dashboard_parser import (
     load_json_species,
     load_valid_taxonomy_names,
     load_ebird_locations,

@@ -16,232 +16,39 @@ import os
 import sys
 import time
 import argparse
-import importlib.util
+from collections import defaultdict
 
-from lrcat_utils import open_catalog, BIRD_ROOT
+from lib.lrcat_utils import open_catalog, make_relative_url
+from lib.shared_queries import (
+    query_alphabetical_species,
+    query_taxonomic_species,
+    query_chronological_photos
+)
+from lib.dashboard_pipeline import run_migration_dashboard_pipeline
+from lib.dashboard_parser import parse_ebird_earliest_sightings
 
-# Dynamic import helpers for hyphenated module files
-def load_module(module_name, file_path):
-    spec = importlib.util.spec_from_file_location(module_name, file_path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+import generators.alphabetical
+import generators.taxonomic
+import generators.chronological
+import generators.growth_chart
 
 def run_migration_dashboard(cursor, base_dir):
     print("\n" + "="*60)
     print("🚀 [1/5] Building Migration & Publishing Dashboard...")
     print("="*60)
-    
-    # Import dashboard modules
-    from audit_taxonomy_migration import audit_migration_tasks, SPLIT_MAPS_LOWER
-    from dashboard_parser import (
-        load_json_species,
-        parse_ebird_sightings,
-        load_ebird_sightings_by_date,
-        load_ebird_locations,
-        load_valid_taxonomy_names
-    )
-    from dashboard_resolver import build_automatic_resolutions
-    from dashboard_db import fetch_db_statistics
-    from dashboard_report import generate_report
-    from dashboard_writer import save_to_csv, save_to_html
-    
-    reports_dir = os.path.join(base_dir, "reports")
-    output_csv = os.path.join(reports_dir, "bird_migration_dashboard.csv")
-    output_html = os.path.join(reports_dir, "bird_migration_dashboard.html")
-    
-    json_path = os.path.join(base_dir, "photos-ebird-mybird.json")
-    ebird_path = os.path.join(base_dir, "ebird.csv")
-    taxonomy_path = os.path.join(base_dir, "taxonomy", "eBird_taxonomy_v2025.csv")
-    taxonomy_dir = os.path.join(base_dir, "taxonomy")
-    
-    json_species = load_json_species(json_path)
-    ebird_sightings = parse_ebird_sightings(ebird_path)
-    ebird_sightings_by_date = load_ebird_sightings_by_date(ebird_path)
-    ebird_locs = load_ebird_locations(ebird_path)
-    valid_taxonomy_names = load_valid_taxonomy_names(taxonomy_path)
-    auto_recs, auto_splits, normalized_v2025 = build_automatic_resolutions(taxonomy_dir)
-    
-    excluded_tags = ["People", "Wildlife", "Ice", "Landscape", "Plant", "Lichen", "Pet", "Zoo", "Wedding", "Garden"]
-    (
-        label_stats, 
-        keyword_stats, 
-        published_stats, 
-        missing_location_counts, 
-        photos_missing_location, 
-        earliest_photos,
-        fully_migrated_species,
-        needs_tagging_examples
-    ) = fetch_db_statistics(cursor, excluded_tags)
-    
-    migration_items = audit_migration_tasks(cursor, ebird_sightings_by_date)
-    
-    all_split_rules = {}
-    for k, v in SPLIT_MAPS_LOWER.items():
-        all_split_rules[k] = (v[0], v[1])
-    for k, v in auto_splits.items():
-        all_split_rules[k.lower()] = (k, v)
-        
-    split_details_by_species = {}
-    for name_lower, (original, candidates) in all_split_rules.items():
-        cursor.execute("""
-            SELECT DISTINCT
-                f.baseName || '.' || f.extension AS Filename,
-                i.captureTime AS CaptureTime,
-                fold.pathFromRoot AS FolderPath
-            FROM Adobe_images i
-            JOIN AgLibraryFile f ON i.rootFile = f.id_local
-            JOIN AgLibraryFolder fold ON f.folder = fold.id_local
-            LEFT JOIN AgLibraryKeywordImage ki ON i.id_local = ki.image
-            LEFT JOIN AgLibraryKeyword k ON ki.tag = k.id_local
-            WHERE LOWER(i.colorLabels) = ? OR LOWER(k.name) = ?
-            ORDER BY i.captureTime;
-        """, (name_lower, name_lower))
-        
-        photos = cursor.fetchall()
-        if not photos:
-            continue
-            
-        photo_recs = []
-        for pr in photos:
-            filename = pr[0]
-            cap_time = pr[1]
-            folder_path = pr[2]
-            capture_date = cap_time[:10] if cap_time else "N/A"
-            
-            logged = ebird_sightings_by_date.get(capture_date, set())
-            matches = logged.intersection(candidates)
-            
-            if len(matches) == 1:
-                match_name = list(matches)[0]
-                if match_name.lower() == original.lower():
-                    rec = f'<span class="success-text" style="color: #2ed573;">Already correct: {match_name} (confirmed via eBird log)</span>'
-                else:
-                    rec = f'<span class="success-text" style="color: #2ed573;">Update to: {match_name} (confirmed via eBird log)</span>'
-            elif len(matches) > 1:
-                rec = f'<span class="warning-text" style="color: #ff9f43;">Choose: {", ".join(sorted(matches))} (multiple logged)</span>'
-            else:
-                rec = f'<span class="error-text" style="color: #ff4d4d;">Manual Review: {", ".join(candidates)} (none logged)</span>'
-                
-            photo_recs.append(f'<li><span class="file-cell">{filename}</span> in <strong style="color: #aaa;">{folder_path}</strong> ({capture_date}) ➔ {rec}</li>')
-            
-        split_details_by_species[original] = photo_recs
-        
-    print("Querying photo capture dates to augment research prompts...")
-    excluded_tags_sql = ", ".join(f"'{tag}'" for tag in excluded_tags)
-    exclude_clause = f"""
-      AND i.id_local NOT IN (
-          SELECT ki_ex.image 
-          FROM AgLibraryKeywordImage ki_ex
-          JOIN AgLibraryKeyword k_ex ON ki_ex.tag = k_ex.id_local
-          WHERE k_ex.name IN ({excluded_tags_sql})
-      )
-    """
-    cursor.execute(f"""
-        SELECT SpeciesName, CaptureTime
-        FROM (
-            SELECT 
-                k.name AS SpeciesName,
-                i.captureTime AS CaptureTime
-            FROM AgLibraryKeyword k
-            JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
-            JOIN Adobe_images i ON ki.image = i.id_local
-            WHERE k.genealogy LIKE ?
-              {exclude_clause}
-            
-            UNION ALL
-            
-            SELECT 
-                i.colorLabels AS SpeciesName,
-                i.captureTime AS CaptureTime
-            FROM Adobe_images i
-            WHERE i.colorLabels != '' 
-              AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple', {excluded_tags_sql})
-              {exclude_clause}
-        )
-    """, (BIRD_ROOT,))
-    
-    photo_dates_by_species = {}
-    for spec, cap_time in cursor.fetchall():
-        if not spec or not cap_time:
-            continue
-        date_str = cap_time[:10]
-        if spec not in photo_dates_by_species:
-            photo_dates_by_species[spec] = set()
-        photo_dates_by_species[spec].add(date_str)
-
-    merged_rows = generate_report(
-        label_stats, 
-        keyword_stats, 
-        published_stats, 
-        json_species, 
-        ebird_sightings, 
-        missing_location_counts,
-        fully_migrated_species,
-        valid_taxonomy_names
-    )
-    
-    os.makedirs(reports_dir, exist_ok=True)
-    save_to_csv(output_csv, merged_rows)
-    save_to_html(
-        output_html, 
-        merged_rows, 
-        photos_missing_location, 
-        earliest_photos, 
-        migration_items, 
-        split_details_by_species, 
-        auto_recs, 
-        normalized_v2025, 
-        ebird_locs,
-        needs_tagging_examples,
-        photo_dates_by_species=photo_dates_by_species
-    )
-    
-    print(f"✅ Dashboard generated: {output_html}")
-    return output_html
+    return run_migration_dashboard_pipeline(cursor, base_dir)
 
 def run_alphabetical_lifelist(cursor, base_dir):
     print("\n" + "="*60)
     print("🔤 [2/5] Building Alphabetical Photo Life List...")
     print("="*60)
     
-    alpha_mod = load_module("alpha_lifelist", os.path.join(base_dir, "alphabetical-lifelist-custom-page.py"))
     output_html = os.path.join(base_dir, "html", "alphabetical_life_list.html")
     os.makedirs(os.path.dirname(output_html), exist_ok=True)
     
-    query = """
-    WITH RankedPhotos AS (
-        SELECT 
-            parent_k.id_local AS FamilyId,
-            k.id_local AS SpeciesId,
-            k.name AS SpeciesName,
-            rp.url AS SmugMugUrl,
-            ROW_NUMBER() OVER (PARTITION BY k.name ORDER BY i.captureTime ASC) as rn,
-            COUNT(*) OVER (PARTITION BY k.name) as photo_count
-        FROM AgLibraryKeyword k
-        JOIN AgLibraryKeyword parent_k ON k.parent = parent_k.id_local
-        JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
-        JOIN Adobe_images i ON ki.image = i.id_local
-        JOIN AgLibraryPublishedCollectionImage pci ON i.id_local = pci.image
-        JOIN AgLibraryPublishedCollection child_coll ON pci.collection = child_coll.id_local
-        JOIN AgLibraryPublishedCollection parent_coll ON child_coll.parent = parent_coll.id_local
-        LEFT JOIN AgRemotePhoto rp ON i.id_local = rp.photo AND rp.collection = pci.collection
-        WHERE k.genealogy LIKE ?
-          AND parent_coll.name LIKE '%SmugMug%'
-          AND k.name NOT LIKE '{%'
-    )
-    SELECT 
-        SpeciesName,
-        photo_count,
-        SmugMugUrl
-    FROM RankedPhotos
-    WHERE rn = 1;
-    """
-    cursor.execute(query, (BIRD_ROOT,))
-    raw_results = cursor.fetchall()
-    results = sorted(raw_results, key=lambda x: x[0])
+    results = query_alphabetical_species(cursor)
+    html_content = generators.alphabetical.generate_html_content(results, root_dir=base_dir)
     
-    html_content = alpha_mod.generate_html_content(results)
     with open(output_html, "w", encoding="utf-8") as f:
         f.write(html_content)
         
@@ -253,46 +60,12 @@ def run_taxonomic_lifelist(cursor, base_dir):
     print("🌿 [3/5] Building Taxonomic Photo Life List...")
     print("="*60)
     
-    tax_mod = load_module("tax_lifelist", os.path.join(base_dir, "taxonomic-life-list-custom-page.py"))
     output_html = os.path.join(base_dir, "html", "taxonomic_life_list.html")
     os.makedirs(os.path.dirname(output_html), exist_ok=True)
     
-    query = """
-    WITH RankedPhotos AS (
-        SELECT 
-            parent_k.id_local AS FamilyId,
-            k.id_local AS SpeciesId,
-            parent_k.name AS FamilyGroup,
-            k.name AS SpeciesName,
-            rp.url AS SmugMugUrl,
-            ROW_NUMBER() OVER (PARTITION BY k.name ORDER BY i.captureTime ASC) as rn,
-            COUNT(*) OVER (PARTITION BY k.name) as photo_count
-        FROM AgLibraryKeyword k
-        JOIN AgLibraryKeyword parent_k ON k.parent = parent_k.id_local
-        JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
-        JOIN Adobe_images i ON ki.image = i.id_local
-        JOIN AgLibraryPublishedCollectionImage pci ON i.id_local = pci.image
-        JOIN AgLibraryPublishedCollection child_coll ON pci.collection = child_coll.id_local
-        JOIN AgLibraryPublishedCollection parent_coll ON child_coll.parent = parent_coll.id_local
-        LEFT JOIN AgRemotePhoto rp ON i.id_local = rp.photo AND rp.collection = pci.collection
-        WHERE k.genealogy LIKE ?
-          AND parent_coll.name LIKE '%SmugMug%'
-          AND k.name NOT LIKE '{%'
-    )
-    SELECT 
-        FamilyGroup,
-        SpeciesName,
-        photo_count,
-        SmugMugUrl
-    FROM RankedPhotos
-    WHERE rn = 1
-    ORDER BY FamilyId, SpeciesId;
-    """
-    cursor.execute(query, (BIRD_ROOT,))
-    results = cursor.fetchall()
-    
-    smugmug_galleries = tax_mod.fetch_smugmug_galleries()
-    html_content = tax_mod.generate_html_content(results, smugmug_galleries)
+    results = query_taxonomic_species(cursor)
+    smugmug_galleries = generators.taxonomic.fetch_smugmug_galleries()
+    html_content = generators.taxonomic.generate_html_content(results, smugmug_galleries, root_dir=base_dir)
     
     with open(output_html, "w", encoding="utf-8") as f:
         f.write(html_content)
@@ -305,15 +78,13 @@ def run_chronological_lifelist(cursor, base_dir, show_all=False):
     print("📅 [4/5] Building Chronological Photo Life List...")
     print("="*60)
     
-    chrono_mod = load_module("chrono_lifelist", os.path.join(base_dir, "chronological-lifelist-custom-page.py"))
     output_html = os.path.join(base_dir, "html", "chronological_life_list.html")
     os.makedirs(os.path.dirname(output_html), exist_ok=True)
     
     ebird_csv = os.path.join(base_dir, "ebird.csv")
-    ebird_sightings = chrono_mod.parse_ebird_sightings(ebird_csv)
-    published_photos = chrono_mod.fetch_earliest_published_photos(cursor)
+    ebird_sightings = parse_ebird_earliest_sightings(ebird_csv)
+    published_photos = query_chronological_photos(cursor)
     
-    from collections import defaultdict
     chronological_data = defaultdict(list)
     matched_photo_species = set()
     
@@ -369,7 +140,7 @@ def run_chronological_lifelist(cursor, base_dir, show_all=False):
         )
         
     total_seen_count = len(ebird_sightings) + unmatched_count
-    html_content = chrono_mod.generate_html_content(chronological_data, total_seen_count)
+    html_content = generators.chronological.generate_html_content(chronological_data, total_seen_count, root_dir=base_dir)
     
     with open(output_html, "w", encoding="utf-8") as f:
         f.write(html_content)
@@ -382,13 +153,10 @@ def run_growth_chart(cursor, base_dir):
     print("📈 [5/5] Building Photographic Species Life List Growth Chart...")
     print("="*60)
     
-    growth_mod = load_module("growth_chart", os.path.join(base_dir, "generate_photo_growth_chart.py"))
-    chrono_mod = load_module("chrono_lifelist", os.path.join(base_dir, "chronological-lifelist-custom-page.py"))
-    
     output_html = os.path.join(base_dir, "html", "photo_lifelist_growth.html")
     os.makedirs(os.path.dirname(output_html), exist_ok=True)
     
-    photos = chrono_mod.fetch_earliest_published_photos(cursor)
+    photos = query_chronological_photos(cursor)
     species_list = []
     for k, v in photos.items():
         d = v.get("date")
@@ -402,14 +170,14 @@ def run_growth_chart(cursor, base_dir):
             })
     species_list.sort(key=lambda x: (x["date"], x["name"]))
     
-    summary, timeline = growth_mod.process_timeline(species_list)
-    html_content = growth_mod.build_html(summary, timeline)
+    summary, timeline = generators.growth_chart.process_timeline(species_list)
+    html_content = generators.growth_chart.build_html(summary, timeline)
     
     with open(output_html, "w", encoding="utf-8") as f:
         f.write(html_content)
         
     # Also write static SVG chart
-    svg_content = growth_mod.build_svg(summary, timeline)
+    svg_content = generators.growth_chart.build_svg(summary, timeline)
     output_svg = os.path.join(os.path.dirname(output_html), "photo_growth_chart.svg")
     with open(output_svg, "w", encoding="utf-8") as f:
         f.write(svg_content)

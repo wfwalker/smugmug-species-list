@@ -98,3 +98,48 @@ def load_ebird_sightings_by_date(csv_path):
     except Exception as e:
         print(f"⚠️ Error parsing eBird CSV: {e}")
     return sightings
+
+def parse_ebird_earliest_sightings(csv_path):
+    """
+    Parses eBird CSV file and returns a dictionary of:
+    common_name -> { "date": YYYY-MM-DD, "location": location_name }
+    containing the earliest sighting for each species.
+    """
+    sightings = {}
+    if not os.path.exists(csv_path):
+        print(f"⚠️ Error: eBird CSV file not found at: {csv_path}")
+        return sightings
+        
+    try:
+        with open(csv_path, mode='r', encoding='utf-8-sig') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                name = row.get("Common Name")
+                date_str = row.get("Date")
+                location = row.get("Location", "Unknown Location")
+                
+                if not name or not date_str:
+                    continue
+                    
+                name = name.strip()
+                # Ignore general genus-level entries or hybrids
+                if " sp." in name.lower() or "/" in name or "hybrid" in name.lower():
+                    continue
+                    
+                # Keep the earliest sighting date
+                if name not in sightings:
+                    sightings[name] = {
+                        "date": date_str.strip(),
+                        "location": location.strip()
+                    }
+                else:
+                    # Compare dates
+                    existing_date = sightings[name]["date"]
+                    if date_str < existing_date:
+                        sightings[name] = {
+                            "date": date_str.strip(),
+                            "location": location.strip()
+                        }
+    except Exception as e:
+        print(f"⚠️ Error parsing eBird CSV for earliest sightings: {e}")
+    return sightings

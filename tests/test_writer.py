@@ -1,7 +1,10 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unittest
 import os
 import tempfile
-from dashboard_writer import save_to_html
+from generators.migration_dashboard import save_to_html
 
 class TestWriter(unittest.TestCase):
     def test_missing_ebird_count_rendered(self):
@@ -36,7 +39,14 @@ class TestWriter(unittest.TestCase):
             with open(os.path.join(full_folder_path, ex_file), "w") as f:
                 f.write("mock")
                 
-            needs_tagging_examples = {"House Wren": [(ex_file, ex_folder, temp_dir)]}
+            needs_tagging_examples = {
+                "House Wren": [
+                    {
+                        "filename": ex_file,
+                        "folder_path": ex_folder
+                    }
+                ]
+            }
             output_html_path = os.path.join(temp_dir, "test_dashboard.html")
             
             # Executes the HTML generation using the actual project templates
@@ -50,7 +60,8 @@ class TestWriter(unittest.TestCase):
                 auto_recs,
                 normalized_v2025,
                 ebird_locs,
-                needs_tagging_examples
+                needs_tagging_examples,
+                root_dir=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             )
             
             self.assertTrue(os.path.exists(output_html_path))

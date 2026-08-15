@@ -1,7 +1,7 @@
 import os
 import csv
-from audit_taxonomy_migration import RENAME_MAPS_LOWER, LUMP_MAPS_LOWER, SPLIT_MAPS_LOWER
-from dashboard_resolver import normalize_name, SYNONYMS
+from lib.taxonomy_maps import RENAME_MAPS_LOWER, LUMP_MAPS_LOWER, SPLIT_MAPS_LOWER
+from lib.dashboard_resolver import normalize_name, SYNONYMS
 
 def save_to_csv(output_path, merged_rows):
     """Writes the dashboard report rows to a CSV file."""
@@ -31,12 +31,14 @@ def save_to_csv(output_path, merged_rows):
                 r["missing_loc_count"]
             ])
 
-def save_to_html(output_path, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species, auto_recs, normalized_v2025, ebird_locs, needs_tagging_examples, photo_dates_by_species=None):
+def save_to_html(output_path, merged_rows, photos_missing_location, earliest_photos, migration_items, split_details_by_species, auto_recs, normalized_v2025, ebird_locs, needs_tagging_examples, photo_dates_by_species=None, root_dir=None):
     """Writes the unified species-centric dashboard report to an HTML file."""
-    base_dir = os.path.dirname(__file__)
-    
+    if not root_dir:
+        # Default to the project root directory
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
     # 1. Load layout template
-    layout_path = os.path.join(base_dir, "templates", "base_layout.html")
+    layout_path = os.path.join(root_dir, "templates", "base_layout.html")
     with open(layout_path, "r", encoding="utf-8") as f:
         html = f.read()
 
@@ -51,7 +53,7 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
     published_not_ebird = sum(1 for r in merged_rows if r["published_count"] > 0 and r["in_ebird"] == "No")
 
     # 3. Load summary template and render
-    summary_path = os.path.join(base_dir, "templates", "dashboard_summary.html")
+    summary_path = os.path.join(root_dir, "templates", "dashboard_summary.html")
     with open(summary_path, "r", encoding="utf-8") as f:
         summary_panel = f.read()
         
@@ -106,7 +108,9 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
 
         # Earliest Photo details
         earliest = earliest_photos.get(species_name, {})
-        earliest_date = earliest.get("date", "N/A")
+        earliest_date = earliest.get("capture_time", "N/A")
+        if earliest_date != "N/A":
+            earliest_date = earliest_date[:10]
         earliest_location = earliest.get("location", "N/A")
         earliest_gallery = earliest.get("collection", "N/A")
         earliest_filename = earliest.get("filename", "N/A")
@@ -173,14 +177,17 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
             example_str = ""
             if examples:
                 valid_example = None
-                for ex_file, ex_folder, ex_root in examples:
-                    # check both the raw path and join it properly
-                    full_path = os.path.join(ex_root, ex_folder, ex_file)
+                for ex_info in examples:
+                    ex_file = ex_info["filename"]
+                    ex_folder = ex_info["folder_path"]
+                    # check if the file exists locally
+                    # For absolute check, we try relative to workspace root
+                    full_path = os.path.join(root_dir, ex_folder, ex_file)
                     if os.path.exists(full_path):
                         valid_example = (ex_file, ex_folder)
                         break
                 if not valid_example:
-                    valid_example = (examples[0][0], examples[0][1])
+                    valid_example = (examples[0]["filename"], examples[0]["folder_path"])
                 ex_file, ex_folder = valid_example
                 example_str = f' (e.g., <span class="file-cell">{ex_file}</span> in <strong>{ex_folder}</strong>)'
             issues_list.append(f'<p class="warning-text">⚠️ <strong>Needs Tagging:</strong> {r["needs_tagging"]} photos have this color label but lack the corresponding taxonomy keyword tag{example_str}.</p>')

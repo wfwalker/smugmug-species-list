@@ -1,17 +1,20 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unittest
-from dashboard_report import generate_report
+from lib.dashboard_report import generate_report
 
 class TestReport(unittest.TestCase):
     def test_generate_report(self):
         # 1. Setup mock statistics
         label_stats = {
-            "House Wren": {"total_label": 10, "keyword_on_label": 8, "needs_tagging": 2},
-            "Andean Gull": {"total_label": 5, "keyword_on_label": 5, "needs_tagging": 0}
+            "House Wren": {"Total_With_This_Label": 10, "Total_With_Keyword": 8, "Needs_Tagging": 2},
+            "Andean Gull": {"Total_With_This_Label": 5, "Total_With_Keyword": 5, "Needs_Tagging": 0}
         }
         keyword_stats = {
-            "House Wren": 8,
-            "Andean Gull": 5,
-            "Belcher's Gull": 2
+            "House Wren": {"Total_With_Keyword": 8},
+            "Andean Gull": {"Total_With_Keyword": 5},
+            "Belcher's Gull": {"Total_With_Keyword": 2}
         }
         published_stats = {
             "House Wren": 5,

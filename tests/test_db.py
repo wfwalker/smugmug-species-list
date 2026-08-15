@@ -1,6 +1,11 @@
 import unittest
 import sqlite3
-from dashboard_db import fetch_db_statistics
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from lib.dashboard_db import fetch_db_statistics
 
 class TestDB(unittest.TestCase):
     def setUp(self):
@@ -49,6 +54,12 @@ class TestDB(unittest.TestCase):
             id_local INTEGER PRIMARY KEY,
             name TEXT,
             parent INTEGER
+        );
+        CREATE TABLE AgRemotePhoto (
+            id_local INTEGER PRIMARY KEY,
+            photo INTEGER,
+            collection INTEGER,
+            url TEXT
         );
         CREATE TABLE AgHarvestedIptcMetadata (
             image INTEGER PRIMARY KEY,
@@ -118,7 +129,7 @@ class TestDB(unittest.TestCase):
             keyword_stats, 
             published_stats, 
             missing_location_counts, 
-            photos_missing_location, 
+            missing_location_photos, 
             earliest_photos,
             fully_migrated_species,
             needs_tagging_examples
@@ -126,12 +137,12 @@ class TestDB(unittest.TestCase):
 
         # Assertions
         self.assertIn("House Wren", label_stats)
-        self.assertEqual(label_stats["House Wren"]["total_label"], 1)
-        self.assertEqual(label_stats["House Wren"]["keyword_on_label"], 1)
-        self.assertEqual(label_stats["House Wren"]["needs_tagging"], 0)
+        self.assertEqual(label_stats["House Wren"]["Total_With_This_Label"], 1)
+        self.assertEqual(label_stats["House Wren"]["Total_With_Keyword"], 1)
+        self.assertEqual(label_stats["House Wren"]["Needs_Tagging"], 0)
 
         self.assertIn("House Wren", keyword_stats)
-        self.assertEqual(keyword_stats["House Wren"], 1)
+        self.assertEqual(keyword_stats["House Wren"]["Total_With_Keyword"], 1)
 
         self.assertIn("House Wren", published_stats)
         self.assertEqual(published_stats["House Wren"], 1)
@@ -139,18 +150,17 @@ class TestDB(unittest.TestCase):
         self.assertIn("House Wren", missing_location_counts)
         self.assertEqual(missing_location_counts["House Wren"], 1)
 
-        self.assertEqual(len(photos_missing_location), 1)
-        self.assertEqual(photos_missing_location[0][0], "House Wren")
-        self.assertEqual(photos_missing_location[0][1], "D86A7390.CR3")
+        self.assertEqual(len(missing_location_photos), 1)
+        self.assertIn("House Wren", missing_location_photos)
+        self.assertEqual(missing_location_photos["House Wren"][0]["filename"], "D86A7390.CR3")
 
         self.assertIn("House Wren", earliest_photos)
-        self.assertEqual(earliest_photos["House Wren"]["date"], "2026-05-12")
+        self.assertEqual(earliest_photos["House Wren"]["capture_time"], "2026-05-12T10:30:00")
 
         # Test needs_tagging_examples for Anhinga
         self.assertIn("Anhinga", needs_tagging_examples)
-        self.assertEqual(needs_tagging_examples["Anhinga"][0][0], "D86A7391.CR3")
-        self.assertEqual(needs_tagging_examples["Anhinga"][0][1], "2026/05/")
-        self.assertEqual(earliest_photos["House Wren"]["date"], "2026-05-12")
+        self.assertEqual(needs_tagging_examples["Anhinga"][0]["filename"], "D86A7391.CR3")
+        self.assertEqual(needs_tagging_examples["Anhinga"][0]["folder_path"], "2026/05/")
 
 if __name__ == "__main__":
     unittest.main()

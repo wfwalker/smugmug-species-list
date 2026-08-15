@@ -1,4 +1,8 @@
 #!/usr/bin/python3
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 import os
 import csv
@@ -6,7 +10,7 @@ import sys
 import shutil
 import subprocess
 from collections import defaultdict
-from lrcat_utils import open_catalog, BIRD_ROOT
+from lib.lrcat_utils import open_catalog, BIRD_ROOT
 
 EBIRD_CSV = "ebird.csv"
 

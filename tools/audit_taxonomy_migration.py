@@ -1,9 +1,13 @@
 #!/usr/bin/python3
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 import os
 import csv
 import sys
-from lrcat_utils import open_catalog
+from lib.lrcat_utils import open_catalog
 
 REPORTS_DIR = "reports"
 OUTPUT_CSV = os.path.join(REPORTS_DIR, "taxonomy_migration_audit.csv")

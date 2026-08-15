@@ -1,12 +1,8 @@
-#!/usr/bin/python3
-
 import os
 import sys
-import urllib.request
 import json
-from lrcat_utils import open_catalog, BIRD_ROOT, make_relative_url
-
-OUTPUT_HTML = "html/taxonomic_life_list.html"
+import urllib.request
+from lrcat_utils import make_relative_url
 
 def fetch_smugmug_galleries():
     """Queries SmugMug API to get currently active bird family gallery UrlNames."""
@@ -29,15 +25,17 @@ def fetch_smugmug_galleries():
         print(f"⚠️ Error calling SmugMug API: {e}")
         return []
 
-def generate_html_content(results, smugmug_gallery_names):
+def generate_html_content(results, smugmug_gallery_names, root_dir=None):
     """Generates HTML content utilizing the shared base template and partials."""
-    # 1. Load layout template and partials
-    base_dir = os.path.dirname(__file__)
-    with open(os.path.join(base_dir, "templates", "base_layout.html"), "r", encoding="utf-8") as f:
+    if not root_dir:
+        # Default to the project root directory
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+    with open(os.path.join(root_dir, "templates", "base_layout.html"), "r", encoding="utf-8") as f:
         html = f.read()
-    with open(os.path.join(base_dir, "templates", "row_simple.html"), "r", encoding="utf-8") as f:
+    with open(os.path.join(root_dir, "templates", "row_simple.html"), "r", encoding="utf-8") as f:
         row_template = f.read()
-    with open(os.path.join(base_dir, "templates", "row_family_header.html"), "r", encoding="utf-8") as f:
+    with open(os.path.join(root_dir, "templates", "row_family_header.html"), "r", encoding="utf-8") as f:
         family_template = f.read()
         
     gallery_mapping = {
@@ -53,7 +51,6 @@ def generate_html_content(results, smugmug_gallery_names):
         "Osprey": "Birds-of-Prey",
     }
     
-    # 2. Build species list
     list_items = []
     current_family = None
     
@@ -94,31 +91,26 @@ def generate_html_content(results, smugmug_gallery_names):
         
     content = '<ul class="species-grid">\n' + "\n".join(list_items) + '\n    </ul>'
     
-    # 3. Page-specific CSS rules
     styles = """
         .species-grid { 
             column-count: 3; column-gap: 40px; 
             list-style: none; padding: 0; margin: 0;
         }
         .species-grid li { margin-bottom: 8px; break-inside: avoid; }
-        .letter-heading { 
+        .family-heading { 
             font-size: 1.3em; 
             font-weight: bold; 
             margin-top: 20px; 
             margin-bottom: 10px; 
             border-bottom: 2px solid #444;
             padding-bottom: 4px;
-            color: #fff;
             break-inside: avoid;
         }
-        .letter-heading:first-child { margin-top: 0; }
-        .letter-heading a { color: #fff; text-decoration: none; }
-        .letter-heading a:hover { text-decoration: underline; }
+        .family-heading:first-child { margin-top: 0; }
         a { color: #4db8ff; }
         .sm-user-ui h3 { padding-bottom: 16px; padding-top: 8px; }
     """
     
-    # 4. Perform substitutions
     html = html.replace("{{ PAGE_TITLE }}", "Bill's Taxonomic Photo Life List")
     html = html.replace("{{ HEADER_TITLE }}", "Bill's Taxonomic Photo Life List")
     html = html.replace("{{ STATS_HEADER }}", f"({len(results)} species)")
@@ -126,58 +118,3 @@ def generate_html_content(results, smugmug_gallery_names):
     html = html.replace("{{ CONTENT }}", content)
     
     return html
-
-def main():
-    # Ensure html directory exists
-    os.makedirs(os.path.dirname(OUTPUT_HTML), exist_ok=True)
-    
-    query = """
-    WITH RankedPhotos AS (
-        SELECT 
-            parent_k.id_local AS FamilyId,
-            k.id_local AS SpeciesId,
-            parent_k.name AS FamilyGroup,
-            k.name AS SpeciesName,
-            rp.url AS SmugMugUrl,
-            ROW_NUMBER() OVER (PARTITION BY k.name ORDER BY i.captureTime ASC) as rn,
-            COUNT(*) OVER (PARTITION BY k.name) as photo_count
-        FROM AgLibraryKeyword k
-        JOIN AgLibraryKeyword parent_k ON k.parent = parent_k.id_local
-        JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
-        JOIN Adobe_images i ON ki.image = i.id_local
-        JOIN AgLibraryPublishedCollectionImage pci ON i.id_local = pci.image
-        JOIN AgLibraryPublishedCollection child_coll ON pci.collection = child_coll.id_local
-        JOIN AgLibraryPublishedCollection parent_coll ON child_coll.parent = parent_coll.id_local
-        LEFT JOIN AgRemotePhoto rp ON i.id_local = rp.photo AND rp.collection = pci.collection
-        WHERE k.genealogy LIKE ?
-          AND parent_coll.name LIKE '%SmugMug%'
-          AND k.name NOT LIKE '{%'
-    )
-    SELECT 
-        FamilyGroup,
-        SpeciesName,
-        photo_count,
-        SmugMugUrl
-    FROM RankedPhotos
-    WHERE rn = 1
-    ORDER BY FamilyId, SpeciesId;
-    """
-    
-    print("Connecting to Lightroom Catalog...")
-    with open_catalog() as cursor:
-        cursor.execute(query, (BIRD_ROOT,))
-        results = cursor.fetchall()
-        
-    print("Fetching SmugMug galleries list...")
-    smugmug_galleries = fetch_smugmug_galleries()
-    
-    print(f"Generating taxonomic lifelist custom page for {len(results)} species...")
-    html_content = generate_html_content(results, smugmug_galleries)
-    
-    with open(OUTPUT_HTML, "w", encoding="utf-8") as f:
-        f.write(html_content)
-        
-    print(f"✅ Success! {OUTPUT_HTML} has been created.")
-
-if __name__ == "__main__":
-    main()

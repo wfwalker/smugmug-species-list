@@ -1,16 +1,11 @@
-from lrcat_utils import BIRD_ROOT, format_location
+from lib.lrcat_utils import BIRD_ROOT
 
 def fetch_db_statistics(cursor, excluded_tags):
     """
-    Queries the Lightroom database and returns:
-    - label_stats: dict of label -> {total_label, keyword_on_label, needs_tagging}
-    - keyword_stats: dict of keyword -> count
-    - published_stats: dict of species -> published_count
-    - missing_location_counts: dict of species -> count of photos missing locations
-    - photos_missing_location: list of tuples (Species, Filename, Collection, Date)
-    - earliest_photos: dict of Species -> {filename, collection, date, location}
-    - fully_migrated_species: set of species names that have at least one fully migrated published photo
+    Queries Lightroom catalog database for keyword, color labels, and location status info.
+    Returns: (label_stats, keyword_stats, published_stats, missing_location_counts, missing_location_photos)
     """
+    # Exclude tags
     excluded_tags_sql = ", ".join(f"'{tag}'" for tag in excluded_tags)
     exclude_clause = f"""
       AND i.id_local NOT IN (
@@ -20,7 +15,7 @@ def fetch_db_statistics(cursor, excluded_tags):
           WHERE k_ex.name IN ({excluded_tags_sql})
       )
     """
-    
+
     # Query A: Label-based statistics (Legacy color label info)
     query_label = """
     SELECT 
@@ -89,7 +84,7 @@ def fetch_db_statistics(cursor, excluded_tags):
     GROUP BY SpeciesName;
     """
 
-    # Query D: Count of published photos missing location details per species
+    # Query D: Count of published photos missing locations (grouped by species)
     query_missing_location_counts = """
     SELECT 
         SpeciesName,
@@ -186,21 +181,24 @@ def fetch_db_statistics(cursor, excluded_tags):
           AND (iptc.countryRef IS NULL OR iptc.countryRef = '')
           {exclude_clause}
     )
-    ORDER BY SpeciesName, CaptureTime;
+    ORDER BY SpeciesName, CaptureTime DESC;
     """
 
-    # Query F: Details of the earliest photo for all published species
+    # Query F: Earliest photos for each species (with full location text)
     query_earliest_photos = """
-    WITH RankedPhotos AS (
+    SELECT 
+        SpeciesName,
+        Filename,
+        CollectionName,
+        CaptureTime,
+        Location, City, State, Country
+    FROM (
         SELECT 
             SpeciesName,
             Filename,
             CollectionName,
             CaptureTime,
-            Location,
-            City,
-            State,
-            Country,
+            Location, City, State, Country,
             ROW_NUMBER() OVER (PARTITION BY SpeciesName ORDER BY CaptureTime ASC) as rn
         FROM (
             SELECT 
@@ -255,53 +253,33 @@ def fetch_db_statistics(cursor, excluded_tags):
               {exclude_clause}
         )
     )
-    SELECT 
-        SpeciesName,
-        Filename,
-        CollectionName,
-        CaptureTime,
-        Location,
-        City,
-        State,
-        Country
-    FROM RankedPhotos
     WHERE rn = 1;
     """
 
-    # Query G: Find species with at least one published photo having label + keyword + location
+    # Query G: Fully migrated check (contains keyword but NO color labels)
     query_fully_migrated = """
-    SELECT DISTINCT
-        k.name AS SpeciesName
+    SELECT DISTINCT k.name AS SpeciesName
     FROM AgLibraryKeyword k
     JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
     JOIN Adobe_images i ON ki.image = i.id_local
-    JOIN AgLibraryPublishedCollectionImage pci ON i.id_local = pci.image
-    JOIN AgLibraryPublishedCollection child_coll ON pci.collection = child_coll.id_local
-    JOIN AgLibraryPublishedCollection parent_coll ON child_coll.parent = parent_coll.id_local 
-        AND parent_coll.name LIKE '%SmugMug%'
-    LEFT JOIN AgHarvestedIptcMetadata iptc ON i.id_local = iptc.image
+    LEFT JOIN Adobe_images i_lbl 
+      ON i.id_local = i_lbl.id_local 
+      AND i_lbl.colorLabels = k.name
     WHERE k.genealogy LIKE ?
-      AND i.colorLabels = k.name
-      AND (
-          (iptc.locationRef IS NOT NULL AND iptc.locationRef != '') OR
-          (iptc.cityRef IS NOT NULL AND iptc.cityRef != '') OR
-          (iptc.stateRef IS NOT NULL AND iptc.stateRef != '') OR
-          (iptc.countryRef IS NOT NULL AND iptc.countryRef != '')
-      )
+      AND i_lbl.id_local IS NULL
       {exclude_clause};
     """
 
-    # Query H: Fetch example filenames of photos with a color label missing the taxonomy keyword
+    # Query H: Color-labeled photos needing to be tagged in Lightroom (label exists, keyword missing)
     query_needs_tagging_examples = """
-    SELECT DISTINCT
+    SELECT 
         i.colorLabels AS SpeciesName,
         f.baseName || '.' || f.extension AS Filename,
-        fold.pathFromRoot AS FolderPath,
-        rf.absolutePath AS RootPath
+        fol.pathFromRoot AS FolderPath,
+        i.captureTime AS CaptureTime
     FROM Adobe_images i
     JOIN AgLibraryFile f ON i.rootFile = f.id_local
-    JOIN AgLibraryFolder fold ON f.folder = fold.id_local
-    JOIN AgLibraryRootFolder rf ON fold.rootFolder = rf.id_local
+    JOIN AgLibraryFolder fol ON f.folder = fol.id_local
     LEFT JOIN AgLibraryKeyword k 
         ON i.colorLabels = k.name 
         AND k.genealogy LIKE ?
@@ -328,65 +306,84 @@ def fetch_db_statistics(cursor, excluded_tags):
     cursor.execute(query_label, (BIRD_ROOT,))
     label_stats = {
         row[0]: {
-            "total_label": row[1],
-            "keyword_on_label": row[2],
-            "needs_tagging": row[3]
+            "Total_With_This_Label": row[1],
+            "Total_With_Keyword": row[2],
+            "Needs_Tagging": row[3]
         }
         for row in cursor.fetchall()
     }
 
     # Fetch keyword data
     cursor.execute(query_keyword, (BIRD_ROOT,))
-    keyword_stats = {row[0]: row[1] for row in cursor.fetchall()}
+    keyword_stats = {
+        row[0]: {
+            "Total_With_Keyword": row[1]
+        }
+        for row in cursor.fetchall()
+    }
 
-    # Fetch published data
+    # Fetch published counts
     cursor.execute(query_published, (BIRD_ROOT,))
-    published_stats = {row[0]: row[1] for row in cursor.fetchall()}
+    published_stats = {
+        row[0]: row[1]
+        for row in cursor.fetchall()
+    }
 
     # Fetch missing location counts
     cursor.execute(query_missing_location_counts, (BIRD_ROOT,))
-    missing_location_counts = {row[0]: row[1] for row in cursor.fetchall()}
+    missing_location_counts = {
+        row[0]: row[1]
+        for row in cursor.fetchall()
+    }
 
-    # Fetch detailed missing location photos list
+    # Fetch specific photos missing location details
     cursor.execute(query_photos_missing_location, (BIRD_ROOT,))
-    photos_missing_location = cursor.fetchall()
+    missing_location_photos = {}
+    for spec, filename, coll, cap_time in cursor.fetchall():
+        if spec not in missing_location_photos:
+            missing_location_photos[spec] = []
+        missing_location_photos[spec].append({
+            "filename": filename,
+            "collection": coll,
+            "capture_time": cap_time
+        })
 
-    # Fetch earliest photo details
+    # Fetch earliest photos for each species
     cursor.execute(query_earliest_photos, (BIRD_ROOT,))
     earliest_photos = {}
-    for r in cursor.fetchall():
-        species = r[0]
-        filename = r[1]
-        collection = r[2]
-        capture_time = r[3]
-        formatted_loc = format_location(r[4], r[5], r[6], r[7])
-        earliest_photos[species] = {
+    for spec, filename, coll, cap_time, loc, city, state, country in cursor.fetchall():
+        from lib.lrcat_utils import format_location
+        formatted_loc = format_location(loc, city, state, country)
+        earliest_photos[spec] = {
             "filename": filename,
-            "collection": collection,
-            "date": capture_time[:10] if capture_time else "N/A",
+            "collection": coll,
+            "capture_time": cap_time,
             "location": formatted_loc
         }
 
-    # Execute query G for fully migrated species
+    # Fetch fully migrated species set
     cursor.execute(query_fully_migrated, (BIRD_ROOT,))
-    fully_migrated_species = {row[0] for row in cursor.fetchall()}
+    fully_migrated = {row[0] for row in cursor.fetchall()}
 
     # Fetch needs tagging examples
     cursor.execute(query_needs_tagging_examples, (BIRD_ROOT,))
     needs_tagging_examples = {}
-    for row in cursor.fetchall():
-        spec = row[0]
+    for spec, filename, folder_path, cap_time in cursor.fetchall():
         if spec not in needs_tagging_examples:
             needs_tagging_examples[spec] = []
-        needs_tagging_examples[spec].append((row[1], row[2], row[3]))
+        needs_tagging_examples[spec].append({
+            "filename": filename,
+            "folder_path": folder_path,
+            "capture_time": cap_time
+        })
 
     return (
-        label_stats, 
-        keyword_stats, 
-        published_stats, 
-        missing_location_counts, 
-        photos_missing_location, 
+        label_stats,
+        keyword_stats,
+        published_stats,
+        missing_location_counts,
+        missing_location_photos,
         earliest_photos,
-        fully_migrated_species,
+        fully_migrated,
         needs_tagging_examples
     )
