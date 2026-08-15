@@ -157,8 +157,9 @@ def save_to_html(output_path, merged_rows, photos_missing_location, earliest_pho
                         if len(years) == 1:
                             date_clause = f" I photographed it in {list(years)[0]}."
                             
-            research_prompt = f"What is the taxonomic history and current name for &quot;{species_name}&quot; in the eBird v2025/Clements taxonomy? Was it split, lumped, or renamed?{date_clause}"
-            research_btn = f"""<button class="copy-btn" onclick="navigator.clipboard.writeText('{research_prompt}'); const btn = this; const orig = btn.innerHTML; btn.innerHTML = 'Copied!'; btn.style.borderColor = '#2ed573'; btn.style.color = '#2ed573'; setTimeout(function() {{ btn.innerHTML = orig; btn.style.borderColor = '#555'; btn.style.color = '#fff'; }}, 2000)" style="margin-left: 8px; vertical-align: middle;">🔍 Research</button>"""
+            research_prompt = f"using the taxonomy-research skill, what is the taxonomic history and current name for &quot;{species_name}&quot; in the eBird v2025/Clements taxonomy? Was it split, lumped, or renamed?{date_clause}"
+            escaped_prompt = research_prompt.replace("'", "\\'")
+            research_btn = f"""<button class="copy-btn" onclick="navigator.clipboard.writeText('{escaped_prompt}'); const btn = this; const orig = btn.innerHTML; btn.innerHTML = 'Copied!'; btn.style.borderColor = '#2ed573'; btn.style.color = '#2ed573'; setTimeout(function() {{ btn.innerHTML = orig; btn.style.borderColor = '#555'; btn.style.color = '#fff'; }}, 2000)" style="margin-left: 8px; vertical-align: middle;">🔍 Research</button>"""
 
             issues_list.append(f'<p class="error-text" style="color: #ff3f3f; margin-bottom: 4px;">❌ <strong>Invalid Name:</strong> "{species_name}" is not a valid common name in the eBird v2025 taxonomy. Update this tag/label in Lightroom.{action_text}{research_btn}</p>')
             issues_list.append('<p class="info-text" style="color: #888; font-size: 0.85em; margin-top: 0; margin-bottom: 12px; padding-left: 20px;">💡 <em>Hint:</em> If this is a mammal, plant, landscape, or other non-bird subject, assign the keyword tag <strong>"Wildlife"</strong> or <strong>"Landscape"</strong> to it in Lightroom. The dashboard will then automatically exclude it.</p>')
