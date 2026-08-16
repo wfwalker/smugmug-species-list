@@ -70,117 +70,88 @@ def generate_html_content(chronological_data, total_seen_count, root_dir=None):
     
     # 3. Page-specific CSS rules
     styles = """
-        .chrono-year-group {
-            margin-bottom: 40px;
-        }
-        .chrono-year-heading {
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #ff9f43;
-            border-bottom: 2px solid #332115;
+        .year-section { margin-bottom: 50px; }
+        .year-heading { 
+            font-size: 1.8em; 
+            font-weight: bold; 
+            margin-top: 40px; 
+            margin-bottom: 20px; 
+            border-bottom: 2px solid #ff9f43;
             padding-bottom: 8px;
-            margin-bottom: 20px;
+            color: #fff;
         }
-        .chrono-grid {
+        .timeline-table {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-        }
-        .chrono-card {
-            background-color: #111;
+            grid-template-columns: 120px 1.2fr 1.5fr 1.8fr;
+            gap: 1px;
+            background-color: #222;
             border: 1px solid #222;
             border-radius: 6px;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
         }
-        .chrono-card.text-only {
-            padding: 16px 20px;
-            border-left: 4px solid #555;
-            min-height: 100px;
-            justify-content: center;
-        }
-        .chrono-img-container {
-            width: 100%;
-            height: 180px;
-            background-color: #0b0b0b;
-            overflow: hidden;
-            position: relative;
-            border-bottom: 1px solid #1a1a1a;
-        }
-        .chrono-img-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-        .chrono-img-container:hover img {
-            transform: scale(1.05);
-        }
-        .chrono-card-content {
-            padding: 16px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .chrono-species-name {
-            font-weight: bold;
-            font-size: 1.15em;
-            margin: 0;
-        }
-        .chrono-species-name a {
+        .table-header {
+            background-color: #1a1a1a;
             color: #fff;
-            text-decoration: none;
-        }
-        .chrono-species-name a:hover {
-            color: #4db8ff;
-        }
-        .chrono-meta-label {
-            font-size: 0.75em;
-            text-transform: uppercase;
-            color: #666;
             font-weight: bold;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
-        }
-        .chrono-meta-val {
-            font-size: 0.85em;
-            color: #ccc;
-            margin: 0;
-        }
-        .chrono-photo-meta {
-            border-bottom: 1px solid #1a1a1a;
-            padding-bottom: 8px;
-            margin-bottom: 4px;
-        }
-        .chrono-sighting-meta {
-            padding-top: 4px;
-        }
-        .text-date {
-            font-weight: bold;
-            color: #aaa;
+            padding: 14px 18px;
             font-size: 0.9em;
-            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 2px solid #333;
         }
-        .text-species {
-            font-size: 1.2em;
+        .table-row {
+            display: contents; /* Allows grid alignment */
+        }
+        .table-cell {
+            background-color: #131313;
+            padding: 14px 18px;
+            font-size: 0.95em;
+            border-bottom: 1px solid #1a1a1a;
+            line-height: 1.4;
+            display: flex;
+            align-items: center;
+        }
+        .table-row:hover .table-cell {
+            background-color: #1d1d1d;
+        }
+        .date-cell {
+            font-family: monospace;
+            font-size: 1.05em;
+            color: #ff9f43; /* Warm orange to emphasize dates */
             font-weight: bold;
-            color: #fff;
-            margin-top: 0;
-            margin-bottom: 8px;
+            white-space: nowrap;
         }
-        .text-loc {
-            font-size: 0.85em;
-            color: #888;
-            margin: 0;
+        .species-cell {
+            font-weight: 500;
+        }
+        .species-link { color: #4db8ff; text-decoration: none; }
+        .species-link:hover { text-decoration: underline; }
+        .species-text { color: #aaa; font-weight: normal; }
+        
+        .photo-cell {
+            color: #ccc;
+        }
+        .photo-link {
+            color: #00fa9a;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .photo-link:hover {
+            text-decoration: underline;
+        }
+        .location-cell {
+            color: #ccc;
         }
     """
     
     # 4. Perform substitutions
     html = html.replace("{{ PAGE_TITLE }}", "Bill's Chronological Photo Life List")
     html = html.replace("{{ HEADER_TITLE }}", "Bill's Chronological Photo Life List")
-    html = html.replace("{{ STATS_HEADER }}", f"({total_seen_count} species seen, {len(chronological_data)} years)")
+    total_photographed = sum(
+        1 for species_list in chronological_data.values() 
+        for s in species_list if s.get("photo")
+    )
+    html = html.replace("{{ STATS_HEADER }}", f"({total_photographed} species)")
     html = html.replace("{{ PAGE_SPECIFIC_STYLES }}", styles)
     html = html.replace("{{ CONTENT }}", content)
     
