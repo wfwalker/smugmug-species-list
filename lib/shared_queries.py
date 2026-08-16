@@ -46,9 +46,15 @@ def query_taxonomic_species(cursor):
     query = """
     WITH RankedPhotos AS (
         SELECT 
-            parent_k.id_local AS FamilyId,
+            CASE 
+                WHEN parent_k.name LIKE 'eBird taxonomy%' THEN k.id_local 
+                ELSE parent_k.id_local 
+            END AS FamilyId,
             k.id_local AS SpeciesId,
-            parent_k.name AS FamilyGroup,
+            CASE 
+                WHEN parent_k.name LIKE 'eBird taxonomy%' THEN k.name 
+                ELSE parent_k.name 
+            END AS FamilyGroup,
             k.name AS SpeciesName,
             rp.url AS SmugMugUrl,
             ROW_NUMBER() OVER (PARTITION BY k.name ORDER BY i.captureTime ASC) as rn,

@@ -5,14 +5,26 @@ def fetch_db_statistics(cursor, excluded_tags):
     Queries Lightroom catalog database for keyword, color labels, and location status info.
     Returns: (label_stats, keyword_stats, published_stats, missing_location_counts, missing_location_photos)
     """
-    # Exclude tags
-    excluded_tags_sql = ", ".join(f"'{tag}'" for tag in excluded_tags)
-    exclude_clause = f"""
+    # 1. Label-based exclude clause (ignores all excluded tags)
+    label_excluded_tags_sql = ", ".join(f"'{tag}'" for tag in excluded_tags)
+    label_exclude_clause = f"""
       AND i.id_local NOT IN (
           SELECT ki_ex.image 
           FROM AgLibraryKeywordImage ki_ex
           JOIN AgLibraryKeyword k_ex ON ki_ex.tag = k_ex.id_local
-          WHERE k_ex.name IN ({excluded_tags_sql})
+          WHERE k_ex.name IN ({label_excluded_tags_sql})
+      )
+    """
+
+    # 2. Keyword-based exclude clause (ignores only captive/domestic/human/garden settings: Art, People, Pet, Zoo, Wedding, Garden)
+    keyword_excluded_tags = [tag for tag in excluded_tags if tag in ["Art", "People", "Pet", "Zoo", "Wedding", "Garden"]]
+    keyword_excluded_tags_sql = ", ".join(f"'{tag}'" for tag in keyword_excluded_tags)
+    keyword_exclude_clause = f"""
+      AND i.id_local NOT IN (
+          SELECT ki_ex.image 
+          FROM AgLibraryKeywordImage ki_ex
+          JOIN AgLibraryKeyword k_ex ON ki_ex.tag = k_ex.id_local
+          WHERE k_ex.name IN ({keyword_excluded_tags_sql})
       )
     """
 
@@ -30,8 +42,8 @@ def fetch_db_statistics(cursor, excluded_tags):
     LEFT JOIN AgLibraryKeywordImage ki 
         ON i.id_local = ki.image AND k.id_local = ki.tag
     WHERE i.colorLabels != '' 
-      AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple', {excluded_tags_sql})
-      {exclude_clause}
+      AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple', {label_excluded_tags_sql})
+      {label_exclude_clause}
     GROUP BY i.colorLabels;
     """
 
@@ -44,7 +56,7 @@ def fetch_db_statistics(cursor, excluded_tags):
     JOIN AgLibraryKeywordImage ki ON k.id_local = ki.tag
     JOIN Adobe_images i ON ki.image = i.id_local
     WHERE k.genealogy LIKE ?
-      {exclude_clause}
+      {keyword_exclude_clause}
     GROUP BY k.name;
     """
 
@@ -63,8 +75,8 @@ def fetch_db_statistics(cursor, excluded_tags):
         JOIN AgLibraryPublishedCollection parent_coll ON child_coll.parent = parent_coll.id_local 
             AND parent_coll.name LIKE '%SmugMug%'
         WHERE i.colorLabels != '' 
-          AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple', {excluded_tags_sql})
-          {exclude_clause}
+          AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple', {label_excluded_tags_sql})
+          {label_exclude_clause}
         
         UNION
         
@@ -79,7 +91,7 @@ def fetch_db_statistics(cursor, excluded_tags):
         JOIN AgLibraryPublishedCollection parent_coll ON child_coll.parent = parent_coll.id_local 
             AND parent_coll.name LIKE '%SmugMug%'
         WHERE k.genealogy LIKE ?
-          {exclude_clause}
+          {keyword_exclude_clause}
     )
     GROUP BY SpeciesName;
     """
@@ -100,12 +112,12 @@ def fetch_db_statistics(cursor, excluded_tags):
             AND parent_coll.name LIKE '%SmugMug%'
         LEFT JOIN AgHarvestedIptcMetadata iptc ON i.id_local = iptc.image
         WHERE i.colorLabels != '' 
-          AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple', {excluded_tags_sql})
+          AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple', {label_excluded_tags_sql})
           AND (iptc.locationRef IS NULL OR iptc.locationRef = '')
           AND (iptc.cityRef IS NULL OR iptc.cityRef = '')
           AND (iptc.stateRef IS NULL OR iptc.stateRef = '')
           AND (iptc.countryRef IS NULL OR iptc.countryRef = '')
-          {exclude_clause}
+          {label_exclude_clause}
         
         UNION ALL
         
@@ -125,7 +137,7 @@ def fetch_db_statistics(cursor, excluded_tags):
           AND (iptc.cityRef IS NULL OR iptc.cityRef = '')
           AND (iptc.stateRef IS NULL OR iptc.stateRef = '')
           AND (iptc.countryRef IS NULL OR iptc.countryRef = '')
-          {exclude_clause}
+          {keyword_exclude_clause}
     )
     GROUP BY SpeciesName;
     """
@@ -151,12 +163,12 @@ def fetch_db_statistics(cursor, excluded_tags):
             AND parent_coll.name LIKE '%SmugMug%'
         LEFT JOIN AgHarvestedIptcMetadata iptc ON i.id_local = iptc.image
         WHERE i.colorLabels != '' 
-          AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple', {excluded_tags_sql})
+          AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple', {label_excluded_tags_sql})
           AND (iptc.locationRef IS NULL OR iptc.locationRef = '')
           AND (iptc.cityRef IS NULL OR iptc.cityRef = '')
           AND (iptc.stateRef IS NULL OR iptc.stateRef = '')
           AND (iptc.countryRef IS NULL OR iptc.countryRef = '')
-          {exclude_clause}
+          {label_exclude_clause}
           
         UNION ALL
         
@@ -179,7 +191,7 @@ def fetch_db_statistics(cursor, excluded_tags):
           AND (iptc.cityRef IS NULL OR iptc.cityRef = '')
           AND (iptc.stateRef IS NULL OR iptc.stateRef = '')
           AND (iptc.countryRef IS NULL OR iptc.countryRef = '')
-          {exclude_clause}
+          {keyword_exclude_clause}
     )
     ORDER BY SpeciesName, CaptureTime DESC;
     """
@@ -222,8 +234,8 @@ def fetch_db_statistics(cursor, excluded_tags):
             LEFT JOIN AgInternedIptcState state ON iptc.stateRef = state.id_local
             LEFT JOIN AgInternedIptcCountry country ON iptc.countryRef = country.id_local
             WHERE i.colorLabels != '' 
-              AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple', {excluded_tags_sql})
-              {exclude_clause}
+              AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple', {label_excluded_tags_sql})
+              {label_exclude_clause}
               
             UNION ALL
             
@@ -250,7 +262,7 @@ def fetch_db_statistics(cursor, excluded_tags):
             LEFT JOIN AgInternedIptcState state ON iptc.stateRef = state.id_local
             LEFT JOIN AgInternedIptcCountry country ON iptc.countryRef = country.id_local
             WHERE k.genealogy LIKE ?
-              {exclude_clause}
+              {keyword_exclude_clause}
         )
     )
     WHERE rn = 1;
@@ -267,7 +279,7 @@ def fetch_db_statistics(cursor, excluded_tags):
       AND i_lbl.colorLabels = k.name
     WHERE k.genealogy LIKE ?
       AND i_lbl.id_local IS NULL
-      {exclude_clause};
+      {keyword_exclude_clause};
     """
 
     # Query H: Color-labeled photos needing to be tagged in Lightroom (label exists, keyword missing)
@@ -286,21 +298,36 @@ def fetch_db_statistics(cursor, excluded_tags):
     LEFT JOIN AgLibraryKeywordImage ki 
         ON i.id_local = ki.image AND k.id_local = ki.tag
     WHERE i.colorLabels != '' 
-      AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple', {excluded_tags_sql})
+      AND i.colorLabels NOT IN ('Red', 'Yellow', 'Green', 'Blue', 'Purple', {label_excluded_tags_sql})
       AND ki.image IS NULL
-      {exclude_clause}
+      {label_exclude_clause}
     ORDER BY SpeciesName, Filename;
     """
 
-    # Bulk replacement of placeholders
-    query_label = query_label.replace("{exclude_clause}", exclude_clause).replace("{excluded_tags_sql}", excluded_tags_sql)
-    query_keyword = query_keyword.replace("{exclude_clause}", exclude_clause)
-    query_published = query_published.replace("{exclude_clause}", exclude_clause).replace("{excluded_tags_sql}", excluded_tags_sql)
-    query_missing_location_counts = query_missing_location_counts.replace("{exclude_clause}", exclude_clause).replace("{excluded_tags_sql}", excluded_tags_sql)
-    query_photos_missing_location = query_photos_missing_location.replace("{exclude_clause}", exclude_clause).replace("{excluded_tags_sql}", excluded_tags_sql)
-    query_earliest_photos = query_earliest_photos.replace("{exclude_clause}", exclude_clause).replace("{excluded_tags_sql}", excluded_tags_sql)
-    query_fully_migrated = query_fully_migrated.replace("{exclude_clause}", exclude_clause)
-    query_needs_tagging_examples = query_needs_tagging_examples.replace("{exclude_clause}", exclude_clause).replace("{excluded_tags_sql}", excluded_tags_sql)
+    # Perform string replacements on queries
+    query_label = query_label.replace("{label_exclude_clause}", label_exclude_clause).replace("{label_excluded_tags_sql}", label_excluded_tags_sql)
+    query_keyword = query_keyword.replace("{keyword_exclude_clause}", keyword_exclude_clause)
+    
+    query_published = query_published.replace("{label_exclude_clause}", label_exclude_clause)\
+                                     .replace("{label_excluded_tags_sql}", label_excluded_tags_sql)\
+                                     .replace("{keyword_exclude_clause}", keyword_exclude_clause)
+                                     
+    query_missing_location_counts = query_missing_location_counts.replace("{label_exclude_clause}", label_exclude_clause)\
+                                                                 .replace("{label_excluded_tags_sql}", label_excluded_tags_sql)\
+                                                                 .replace("{keyword_exclude_clause}", keyword_exclude_clause)
+                                                                 
+    query_photos_missing_location = query_photos_missing_location.replace("{label_exclude_clause}", label_exclude_clause)\
+                                                                 .replace("{label_excluded_tags_sql}", label_excluded_tags_sql)\
+                                                                 .replace("{keyword_exclude_clause}", keyword_exclude_clause)
+                                                                 
+    query_earliest_photos = query_earliest_photos.replace("{label_exclude_clause}", label_exclude_clause)\
+                                                 .replace("{label_excluded_tags_sql}", label_excluded_tags_sql)\
+                                                 .replace("{keyword_exclude_clause}", keyword_exclude_clause)
+                                                 
+    query_fully_migrated = query_fully_migrated.replace("{keyword_exclude_clause}", keyword_exclude_clause)
+    
+    query_needs_tagging_examples = query_needs_tagging_examples.replace("{label_exclude_clause}", label_exclude_clause)\
+                                                               .replace("{label_excluded_tags_sql}", label_excluded_tags_sql)
 
     # Fetch label data
     cursor.execute(query_label, (BIRD_ROOT,))

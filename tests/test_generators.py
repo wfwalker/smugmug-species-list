@@ -64,6 +64,13 @@ class TestGenerators(unittest.TestCase):
         self.assertIn("2026", html)
         self.assertIn("House Wren", html)
         self.assertIn("/wren", html)
+        
+        # Verify correct CSS classes and structure are generated (not the card grid structure)
+        self.assertIn(".timeline-table", html)
+        self.assertIn(".table-row", html)
+        self.assertIn(".table-cell", html)
+        self.assertIn(".date-cell", html)
+        self.assertIn("(1 species)", html)
 
     def test_growth_chart_generator(self):
         species_list = [

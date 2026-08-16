@@ -83,7 +83,56 @@ class TestWriter(unittest.TestCase):
             
             # 4. The Research button is rendered with the correct clipboard prompt
             self.assertIn("🔍 Research", html_content)
-            self.assertIn("What is the taxonomic history and current name for &quot;House Wren&quot;", html_content)
+            self.assertIn("using the taxonomy-research skill, what is the taxonomic history and current name for &quot;House Wren&quot;", html_content)
+
+    def test_apostrophe_species_name_research_button(self):
+        merged_rows = [
+            {
+                "species_name": "Scripp's Murrelet",
+                "in_json": "Yes",
+                "in_ebird": "Yes",
+                "is_valid_taxonomy": "No",
+                "total_label": 1,
+                "total_keyword": 1,
+                "published_count": 1,
+                "needs_tagging": 0,
+                "missing_loc_count": 0
+            }
+        ]
+        
+        photos_missing_location = []
+        earliest_photos = {}
+        migration_items = []
+        split_details_by_species = {}
+        auto_recs = {}
+        normalized_v2025 = {}
+        ebird_locs = {}
+        needs_tagging_examples = {}
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_html_path = os.path.join(temp_dir, "test_dashboard.html")
+            
+            save_to_html(
+                output_html_path,
+                merged_rows,
+                photos_missing_location,
+                earliest_photos,
+                migration_items,
+                split_details_by_species,
+                auto_recs,
+                normalized_v2025,
+                ebird_locs,
+                needs_tagging_examples,
+                root_dir=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            )
+            
+            self.assertTrue(os.path.exists(output_html_path))
+            
+            with open(output_html_path, "r", encoding="utf-8") as f:
+                html_content = f.read()
+                
+            # The name should have an escaped single quote in Javascript:
+            self.assertIn("Scripp\\'s Murrelet", html_content)
 
 if __name__ == "__main__":
     unittest.main()

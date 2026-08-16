@@ -49,7 +49,10 @@ def fetch_published_species(cursor):
     """
     query = """
     SELECT 
-        parent_k.name AS FamilyGroup,
+        CASE 
+            WHEN parent_k.name LIKE 'eBird taxonomy%' THEN k.name 
+            ELSE parent_k.name 
+        END AS FamilyGroup,
         k.name AS SpeciesName,
         COUNT(DISTINCT i.id_local) AS SpeciesCount
     FROM AgLibraryKeyword k
@@ -63,7 +66,12 @@ def fetch_published_species(cursor):
       AND parent_coll.name LIKE '%SmugMug%'
       AND k.name NOT LIKE '{%'
     GROUP BY k.name
-    ORDER BY parent_k.id_local, k.id_local;
+    ORDER BY 
+        CASE 
+            WHEN parent_k.name LIKE 'eBird taxonomy%' THEN k.id_local 
+            ELSE parent_k.id_local 
+        END, 
+        k.id_local;
     """
     cursor.execute(query, (BIRD_ROOT,))
     return cursor.fetchall()
